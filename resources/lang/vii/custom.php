@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'email_registration_ready' => 'Email đã sẵn sàng để đăng ký',
+    'number_registration_ready' => 'Số điện thoại đã sẵn sàng để đăng ký',
+    'token_not_found' => 'Không tìm thấy mã!',
+    'first_name_required' => 'Vui lòng nhập Tên.',
+    'last_name_required' => 'Vui lòng nhập họ.',
+    'login_failed' => 'Không thể đăng nhập vui lòng kiểm tra thông tin.',
+    'email_sent' => 'Đã gửi email thành công.',
+    'email_not_found' => 'Không tìm thấy email!.',
+    'valid_token' => 'Mã đã khớp, bạn có thể tiếp tục',
+    'invalid_token' => 'Mã không hợp lệ',
+    'password_changed' => 'Thay đổi mật khẩu thành công!',
+    'password_not_matched' => 'Mật khẩu không khớp!',
+    'coupon_limit_over' => 'Mã giảm giá không thể sử dụng!',
+    'coupon_not_found' => 'Không tìm thấy!',
+    'no_data_found' => 'Không tìm thấy!',
+    'update_success' => 'Cập nhật thành công!',
+    'added_success' => 'Thêm thành công!',
+    'removed_success' => 'Xoá thành công!',
+    'already_added' => 'Đã có trong danh sách yêu thích',
+    'order_success' => 'Đặt thành công!',
+    'order_canceled' => 'Đã bị huỷ',
+    'payment_method_updated' => 'Đã cập nhật phương thức thanh toán',
+    'review_submit_success' => 'Gửi dánh giá thành công!',
+];
