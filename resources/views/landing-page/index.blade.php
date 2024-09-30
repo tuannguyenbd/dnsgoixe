@@ -14,7 +14,7 @@
                     </p>
                     <div class="app--btns d-flex flex-wrap">
                         <div class="dropdown">
-                            <a href="#" class="cmn--btn"
+                            <a href="#" class="cmn--btn h-50"
                                data-bs-toggle="dropdown">{{translate('Download User App')}}</a>
                             <div class="dropdown-menu dropdown-button-menu">
                                 <ul>
@@ -35,7 +35,7 @@
                                 </ul>
                             </div>
                         </div>
-                        <a href="#about" class="cmn--btn btn-white text-nowrap overflow-hidden text-truncate">
+                        <a href="#about" class="cmn--btn btn-white text-nowrap overflow-hidden text-truncate h-50">
                             {{translate('Earn_From')}} {{ (($business_name && $business_name['value']) ? $business_name['value'] : "DriveMond") }}
                         </a>
                     </div>
@@ -293,9 +293,9 @@
                         <p class="mb-3 pb-1">
                             {{ $cta?->value && $cta?->value['sub_title'] ? translate($cta?->value['sub_title']) : translate("For both Android and IOS") }}
                         </p>
-                        <div class="d-flex gap-4 gap-md-5">
-                            <div class="me-xl-4">
-                                <h6 class="text-white mb-3 font-regular">{{translate('User App')}}</h6>
+                        <div class="d-flex flex-wrap flex-lg-nowrap gap-4 gap-lg-5">
+                            <div class="me-xl-4 d-flex align-items-center gap-3">
+                                <img src="{{asset('/public/assets/admin-module/img/qr-code/user.png')}}" width="88" alt="">
                                 <div class="d-flex gap-3 flex-column">
                                     <a target="_blank" class="no-gutter" type="button"
                                        href="{{ $cta?->value && $cta?->value['app_store']['user_download_link'] ? $cta?->value['app_store']['user_download_link'] : "" }}">
@@ -309,8 +309,8 @@
                                     </a>
                                 </div>
                             </div>
-                            <div>
-                                <h6 class="text-white mb-3 font-regular">{{translate('Driver App')}}</h6>
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="{{asset('/public/assets/admin-module/img/qr-code/driver.png')}}" width="88" alt="">
                                 <div class="d-flex gap-3 flex-column">
                                     <a target="_blank" class="no-gutter" type="button"
                                        href="{{ $cta?->value && $cta?->value['app_store']['driver_download_link'] ? $cta?->value['app_store']['driver_download_link'] : "" }}">

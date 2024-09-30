@@ -232,30 +232,38 @@ label.file_upload {
 .w-50px {
     width: 50px;
 }
+
 .w-80px {
     width: 80px;
 }
+
 .w-100px {
     width: 100px;
 }
+
 .aspect-ratio-3-1 {
     aspect-ratio: 3/1 !important;
 }
+
 .aspect-ratio-auto {
     aspect-ratio: auto !important;
 }
+
 .alert--primary {
     color: #133e38;
     background: #bff5ef;
     font-size: 12px;
 }
+
 .alert--primary .btn-close {
     box-shadow: none;
     outline: none;
 }
+
 .check-toggle-item .custom-checkbox {
     margin-bottom: 10px;
 }
+
 .check-toggle-item .check-toggle-content {
     display: none;
 }
@@ -271,6 +279,7 @@ label.file_upload {
     line-height: 21px;
     color: #a0a0a0;
 }
+
 .status-warning-modal h5 {
     font-size: 16px;
     font-weight: 500;
@@ -304,6 +313,7 @@ label.file_upload {
     flex-wrap: wrap;
     gap: 16px;
 }
+
 .min-w-120 {
     min-width: 120px;
 }
@@ -312,4 +322,8 @@ label.file_upload {
     display: inline-flex;
     justify-content: center;
     text-align: center;
+}
+
+.absolute-white {
+    color: var(--absolute-white);
 }

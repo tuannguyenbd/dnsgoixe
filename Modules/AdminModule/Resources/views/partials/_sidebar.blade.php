@@ -113,18 +113,31 @@
                                 <span class="badge badge-primary float-end">{{$tripCount[ONGOING]}}</span>
                             </a>
                         </li>
-                        <li class="{{ Request::is('admin/trip/list/completed') || (Request::is('admin/trip/details/*')  && Request::get('type') == 'completed') ?'active open':'' }}">
-                            <a href="{{route('admin.trip.index', ['completed'])}}">
+                        <li class="{{ Request::is('admin/trip/list/completed') || (Request::is('admin/trip/details/*')  && Request::get('type') == COMPLETED) ?'active open':'' }}">
+                            <a href="{{route('admin.trip.index', [COMPLETED])}}">
                                 <i class="bi bi-clipboard-check-fill"></i>
-                                <span class="link-title">{{ translate('completed')}}</span>
-                                <span class="badge badge-primary float-end">{{$tripCount['completed']}}</span>
+                                <span class="link-title">{{ translate(COMPLETED)}}</span>
+                                <span class="badge badge-primary float-end">{{$tripCount[COMPLETED]}}</span>
                             </a>
                         </li>
-                        <li class="{{ Request::is('admin/trip/list/cancelled') || (Request::is('admin/trip/details/*')  && Request::get('type') == 'cancelled') ?'active open':'' }}">
-                            <a href="{{route('admin.trip.index', ['cancelled'])}}">
+                        <li class="{{ Request::is('admin/trip/list/cancelled') || (Request::is('admin/trip/details/*')  && Request::get('type') == CANCELLED) ?'active open':'' }}">
+                            <a href="{{route('admin.trip.index', [CANCELLED])}}">
                                 <i class="bi bi-cloud-minus-fill"></i>
-                                <span class="link-title">{{ translate('cancelled')}}</span>
-                                <span class="badge badge-primary float-end">{{$tripCount['cancelled']}}</span>
+                                <span class="link-title">{{ translate(CANCELLED)}}</span>
+                                <span class="badge badge-primary float-end">{{$tripCount[CANCELLED]}}</span>
+                            </a>
+                        </li>
+                        <li class="{{ Request::is('admin/trip/list/returning') || (Request::is('admin/trip/details/*')  && Request::get('type') == RETURNING) ?'active open':'' }}">
+                            <a href="{{route('admin.trip.index', [RETURNING])}}">
+                                <i class="bi bi-cloud-minus-fill"></i>
+                                <span class="link-title">{{ translate(RETURNING)}}</span>
+                                <span class="badge badge-primary float-end">{{$tripCount[RETURNING]}}</span>
+                            </a>
+                        </li><li class="{{ Request::is('admin/trip/list/returned') || (Request::is('admin/trip/details/*')  && Request::get('type') == RETURNED) ?'active open':'' }}">
+                            <a href="{{route('admin.trip.index', [RETURNED])}}">
+                                <i class="bi bi-cloud-minus-fill"></i>
+                                <span class="link-title">{{ translate(RETURNED)}}</span>
+                                <span class="badge badge-primary float-end">{{$tripCount[RETURNED]}}</span>
                             </a>
                         </li>
                     </ul>
@@ -442,7 +455,7 @@
                         <span class="link-title text-capitalize">{{translate('transactions')}}</span>
                     </a>
                 </li>
-                    <li class="{{Request::is('admin/report*')? 'active open' : ''}}">
+                <li class="{{Request::is('admin/report*')? 'active open' : ''}}">
                     <a href="{{route('admin.report.earning')}}">
                         <i class="bi bi-cash-stack"></i>
                         <span class="link-title text-capitalize">{{translate('reports')}}</span>
@@ -458,6 +471,14 @@
                     </a>
 
                 </li>
+{{--                <li class="--}}
+{{--                {{Request::is('admin/business/external*')? 'active sub-menu-opened' : ''}}">--}}
+{{--                    <a href="{{route('admin.business.external.index')}}">--}}
+{{--                        <i class="bi bi-gear-wide-connected"></i>--}}
+{{--                        <span class="link-title text-capitalize">{{translate('Ecommerce Setup and Integration')}}</span>--}}
+{{--                    </a>--}}
+
+{{--                </li>--}}
                 <li class="has-sub-item {{Request::is('admin/business/pages-media/*')? 'active sub-menu-opened' : ''}}">
                     <a href="#">
                         <i class="bi bi-file-earmark-break-fill"></i>
@@ -508,6 +529,7 @@
                                 {{translate('3rd_party')}}
                             </a>
                         </li>
+
                     </ul>
                     <!-- End Sub Menu -->
                 </li>

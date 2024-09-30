@@ -31,7 +31,7 @@ class CustomerService extends BaseService implements Interface\CustomerServiceIn
         $this->transactionRepository = $transactionRepository;
     }
 
-    public function index(array $criteria = [], array $relations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = []): Collection|LengthAwarePaginator
+    public function index(array $criteria = [], array $relations = [], array $whereHasRelations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = [], array $appends = []): Collection|LengthAwarePaginator
     {
         $data = [];
         if (array_key_exists('status', $criteria) && $criteria['status'] !== 'all') {
@@ -74,17 +74,32 @@ class CustomerService extends BaseService implements Interface\CustomerServiceIn
             'other_documents' => $otherDocuments ?? null,
             'identification_image' => $identityImages ?? null,
             'is_active' => 1,
+            'ref_code' => generateReferralCode(),
         ]);
         DB::beginTransaction();
 
         $customer = $this->userRepository->create($customerData);
-//        $customer?->levelHistory()->create([
-//            'user_level_id' => $firstLevel?->id,
-//            'user_type' => CUSTOMER
-//        ]);
 
         $customer?->userAccount()->create();
+        DB::commit();
+        return $customer;
+    }
 
+    public function createExternalCustomer(array $data): ?Model
+    {
+        $firstLevel = $this->userLevelRepository->findOneBy(criteria: ['user_type' => CUSTOMER, 'sequence' => 1]);
+
+        $customerData = array_merge($data, [
+            'full_name' => $data['first_name'] . " " . $data['last_name'],
+            'user_type' => CUSTOMER,
+            'user_level_id' => $firstLevel?->id,
+            'is_active' => 1,
+            'ref_code' => generateReferralCode(),
+            'identification_image' => []
+        ]);
+        DB::beginTransaction();
+        $customer = $this->userRepository->create($customerData);
+        $customer?->userAccount()->create();
         DB::commit();
         return $customer;
     }
@@ -101,16 +116,19 @@ class CustomerService extends BaseService implements Interface\CustomerServiceIn
         } else {
             $identityImages = $customer?->identification_image;
         }
-        $otherDocuments = [];
-        if (array_key_exists('other_documents', $data)) {
-            foreach ($data['other_documents'] as $image) {
-                $otherDocuments[] = fileUploader('customer/document/', $image->getClientOriginalExtension(), $image);
+        $existingDocuments = array_key_exists('existing_documents', $data) ? $data['existing_documents'] : $customer?->other_documents;
+        $deletedDocuments = array_key_exists('deleted_documents', $data) ? explode(',', $data['deleted_documents']) : [];
+
+        // Remove deleted documents from the existing list
+        $documents = array_diff($existingDocuments, $deletedDocuments);
+        // Handle new uploads
+        if ($data['other_documents'] ?? null) {
+            foreach ($data['other_documents'] as $doc) {
+                $extension = $doc->getClientOriginalExtension();
+                $documents[] = fileUploader('customer/document/', $extension, $doc);
             }
         }
-
-        if ($customer?->other_documents != null && count($customer?->other_documents) > 0) {
-            $otherDocuments = array_merge($otherDocuments, $customer?->other_documents);
-        }
+        $customerData['other_documents'] = $documents;
         if (array_key_exists('profile_image', $data)) {
             $profile_image = fileUploader('customer/profile/', 'png', $data['profile_image'], $customer?->profile_image);
         }
@@ -128,7 +146,6 @@ class CustomerService extends BaseService implements Interface\CustomerServiceIn
             'full_name' => $data['first_name'] . " " . $data['last_name'],
             'loyalty_points' => array_key_exists('decrease', $data) ? $customer->loyalty_points -= $data['decrease'] : (array_key_exists('increase', $data) ? $customer->loyalty_points += $data['increase'] : 0),
             'profile_image' => $profile_image ?? $customer?->profile_image,
-            'other_documents' => $otherDocuments,
             'identification_image' => $identityImages,
             'is_active' => $customer?->is_active ?? 1,
         ]);
@@ -149,6 +166,20 @@ class CustomerService extends BaseService implements Interface\CustomerServiceIn
                 $address->save();
             }
         }
+        DB::commit();
+        return $customer;
+    }
+
+    public function updateExternalCustomer(int|string $id, array $data = []): ?Model
+    {
+        $customer = $this->userRepository->findOne(id: $id);
+        $customerData = $data;
+        $customerData = array_merge($customerData, [
+            'full_name' => $data['first_name'] . " " . $data['last_name'],
+            'is_active' => $customer?->is_active ?? 1,
+        ]);
+        DB::beginTransaction();
+        $customer = $this->userRepository->update(id: $id, data: $customerData);
         DB::commit();
         return $customer;
     }
@@ -357,5 +388,36 @@ class CustomerService extends BaseService implements Interface\CustomerServiceIn
     public function changeLanguage(int|string $id, array $data = []): ?Model
     {
         return $this->userRepository->update(id: $id, data: $data);
+    }
+
+    #handshake mart
+    public function walletTransfer($customer, array $data = [])
+    {
+        if (array_key_exists('type', $data) && $data['type'] == 'debit') {
+            $customer->userAccount()->decrement('wallet_balance', $data['amount']);
+            //customer transaction (debit)
+            $transferData = [
+                'attribute' => 'wallet_transfer_drivemond_to_mart',
+                'debit' => $data['amount'],
+                'balance' => $customer->userAccount->wallet_balance,
+                'user_id' => $customer->id,
+                'account' => 'wallet_balance',
+            ];
+            $this->transactionRepository->create($transferData);
+        } else {
+            //customer account debit
+            $customer->userAccount()->increment('wallet_balance', $data['amount']);
+            //customer transaction (debit)
+
+            $transferData = [
+                'attribute' => 'wallet_transfer_drivemond_from_mart',
+                'credit' => $data['amount'],
+                'balance' => $customer->userAccount->wallet_balance,
+                'user_id' => $customer->id,
+                'account' => 'wallet_balance',
+            ];
+            $this->transactionRepository->create($transferData);
+        }
+
     }
 }

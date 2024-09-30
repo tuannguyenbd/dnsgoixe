@@ -16,6 +16,7 @@ class InformationResource extends JsonResource
     public function toArray($request)
     {
         return [
+            'parcel_category_name' => $this->parcelCategory?->name,
             'parcel_category_id' => $this->parcel_category_id,
             'payer' => $this->payer,
             'weight' => (double)$this->weight

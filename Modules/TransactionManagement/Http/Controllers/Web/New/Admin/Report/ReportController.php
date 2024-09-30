@@ -41,7 +41,14 @@ class ReportController extends BaseController
                 'search' => $request->get('search')
             ]);
         }
-        $trips = $this->tripRequestService->index(criteria: $criteria, relations: ['zone', 'fee'], orderBy: ['created_at' => 'desc'], limit: paginationLimit(), offset: $request['page'] ?? 1);
+        $whereHasRelations = [];
+
+        // Add criteria for the `fee` relationship to filter by `cancelled_by` being either `null` or `CUSTOMER`
+        $whereHasRelations['fee'] = function ($query) {
+            $query->whereNull('cancelled_by')
+                ->orWhere('cancelled_by', '=', 'CUSTOMER'); // Handle `null` or `CUSTOMER`
+        };
+        $trips = $this->tripRequestService->index(criteria: $criteria, relations: ['zone', 'fee'], whereHasRelations: $whereHasRelations, orderBy: ['created_at' => 'desc'], limit: paginationLimit(), offset: $request['page'] ?? 1);
         return view('transactionmanagement::admin.reports.earning', compact('trips'));
     }
 
@@ -60,12 +67,19 @@ class ReportController extends BaseController
         $criteria = [
             'payment_status' => PAID
         ];
+        $whereHasRelations = [];
+
+        // Add criteria for the `fee` relationship to filter by `cancelled_by` being either `null` or `CUSTOMER`
+        $whereHasRelations['fee'] = function ($query) {
+            $query->whereNull('cancelled_by')
+                ->orWhere('cancelled_by', '=', 'CUSTOMER'); // Handle `null` or `CUSTOMER`
+        };
         if ($request->has('search')) {
             $criteria = array_merge($criteria, [
                 'search' => $request->get('search')
             ]);
         }
-        $trips = $this->tripRequestService->index(criteria: $criteria, relations: ['zone', 'fee'], orderBy: ['created_at' => 'desc']);
+        $trips = $this->tripRequestService->index(criteria: $criteria, relations: ['zone', 'fee'],whereHasRelations: $whereHasRelations, orderBy: ['created_at' => 'desc']);
         $data = $trips->map(fn($item) => [
             'id' => $item['id'],
             'Trip ID' => $item['ref_id'],
@@ -86,12 +100,19 @@ class ReportController extends BaseController
         $criteria = [
             'payment_status' => PAID
         ];
+        $whereHasRelations = [];
+
+        // Add criteria for the `fee` relationship to filter by `cancelled_by` being either `null` or `CUSTOMER`
+        $whereHasRelations['fee'] = function ($query) {
+            $query->whereNull('cancelled_by')
+                ->orWhere('cancelled_by', '=', 'CUSTOMER'); // Handle `null` or `CUSTOMER`
+        };
         if ($request->has('search')) {
             $criteria = array_merge($criteria, [
                 'search' => $request->get('search')
             ]);
         }
-        $trips = $this->tripRequestService->index(criteria: $criteria, relations: ['zone', 'fee'], orderBy: ['created_at' => 'desc'], limit: paginationLimit(), offset: $request['page'] ?? 1);
+        $trips = $this->tripRequestService->index(criteria: $criteria, relations: ['zone', 'fee'],whereHasRelations: $whereHasRelations, orderBy: ['created_at' => 'desc'], limit: paginationLimit(), offset: $request['page'] ?? 1);
         return view('transactionmanagement::admin.reports.expense', compact('trips'));
     }
 
@@ -102,12 +123,19 @@ class ReportController extends BaseController
         $criteria = [
             'payment_status' => PAID
         ];
+        $whereHasRelations = [];
+
+        // Add criteria for the `fee` relationship to filter by `cancelled_by` being either `null` or `CUSTOMER`
+        $whereHasRelations['fee'] = function ($query) {
+            $query->whereNull('cancelled_by')
+                ->orWhere('cancelled_by', '=', 'CUSTOMER'); // Handle `null` or `CUSTOMER`
+        };
         if ($request->has('search')) {
             $criteria = array_merge($criteria, [
                 'search' => $request->get('search')
             ]);
         }
-        $trips = $this->tripRequestService->index(criteria: $criteria, relations: ['zone', 'fee'], orderBy: ['created_at' => 'desc']);
+        $trips = $this->tripRequestService->index(criteria: $criteria, relations: ['zone', 'fee'],whereHasRelations: $whereHasRelations, orderBy: ['created_at' => 'desc']);
         $data = $trips->map(fn($item) => [
             'id' => $item['id'],
             'Trip ID' => $item['ref_id'],

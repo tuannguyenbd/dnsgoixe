@@ -35,6 +35,8 @@ class DriverStoreOrUpdateRequest extends FormRequest
             'identification_type' => 'required|in:passport,driving_license,nid',
             'identification_number' => 'required',
             'identity_images' => 'array',
+            'existing_documents' => 'nullable|array',
+            'deleted_documents' => 'nullable|array',
             'other_documents' => 'array',
             'other_documents.*' => [
                 Rule::requiredIf(empty($id)),

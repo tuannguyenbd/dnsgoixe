@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Validator;
 use Modules\BusinessManagement\Http\Requests\UserLocationStore;
 use Modules\BusinessManagement\Service\Interface\BusinessSettingServiceInterface;
 use Modules\BusinessManagement\Service\Interface\CancellationReasonServiceInterface;
+use Modules\BusinessManagement\Service\Interface\ParcelCancellationReasonServiceInterface;
 use Modules\BusinessManagement\Service\Interface\SettingServiceInterface;
 use Modules\TripManagement\Service\Interface\TripRequestServiceInterface;
 use Modules\UserManagement\Repository\UserLastLocationRepositoryInterface;
@@ -25,17 +26,20 @@ class ConfigController extends Controller
     protected $businessSettingService;
     protected $settingService;
     protected $cancellationReasonService;
+    protected $parcelCancellationReasonService;
     protected $zoneService;
     protected $userLastLocationService;
     protected $tripRequestService;
 
-    public function __construct(BusinessSettingServiceInterface    $businessSettingService, SettingServiceInterface $settingService,
-                                CancellationReasonServiceInterface $cancellationReasonService, ZoneServiceInterface $zoneService,
-                                UserLastLocationServiceInterface   $userLastLocationService, TripRequestServiceInterface $tripRequestService)
+    public function __construct(BusinessSettingServiceInterface          $businessSettingService, SettingServiceInterface $settingService,
+                                CancellationReasonServiceInterface       $cancellationReasonService, ZoneServiceInterface $zoneService,
+                                UserLastLocationServiceInterface         $userLastLocationService, TripRequestServiceInterface $tripRequestService,
+                                ParcelCancellationReasonServiceInterface $parcelCancellationReasonService)
     {
         $this->businessSettingService = $businessSettingService;
         $this->settingService = $settingService;
         $this->cancellationReasonService = $cancellationReasonService;
+        $this->parcelCancellationReasonService = $parcelCancellationReasonService;
         $this->zoneService = $zoneService;
         $this->userLastLocationService = $userLastLocationService;
         $this->tripRequestService = $tripRequestService;
@@ -48,6 +52,27 @@ class ConfigController extends Controller
         $loyaltyPoints = $info
             ->where('key_name', 'loyalty_points')
             ->firstWhere('settings_type', 'customer_settings')?->value;
+        $martExternalSetting = false;
+        if (checkSelfExternalConfiguration()) {
+            $martBaseUrl = externalConfig('mart_base_url')?->value;
+            $systemSelfToken = externalConfig('system_self_token')?->value;
+            $martToken = externalConfig('mart_token')?->value;
+            try {
+                $response = Http::get($martBaseUrl . '/api/v1/configurations/get-external',
+                    [
+                        'mart_token' => $martToken,
+                        'drivemond_base_url' => url('/'),
+                        'drivemond_token' => $systemSelfToken,
+                    ]);
+                if ($response->successful()) {
+                    $martResponse = $response->json();
+                    $martExternalSetting = $martResponse['status'];
+                }
+            } catch (\Exception $exception) {
+
+            }
+
+        }
 
         $configs = [
             'is_demo' => (bool)env('APP_MODE') != 'live' ? true : false,
@@ -106,6 +131,13 @@ class ConfigController extends Controller
             'otp_resend_time' => (int)($info->firstWhere('key_name', 'otp_resend_time')?->value ?? 60),
             'vat_tax' => (double)get_cache('vat_percent') ?? 1,
             'payment_gateways' => collect($this->getPaymentMethods()),
+            'referral_earning_status' => referralEarningSetting('referral_earning_status', CUSTOMER)?->value ? true : false,
+            'external_system' => $martExternalSetting,
+            'mart_business_name' => $martExternalSetting ? externalConfig('mart_business_name')?->value ?? "6amMart" : "",
+            'mart_app_url_android' => $martExternalSetting ? externalConfig('mart_app_url_android')?->value : "",
+            'mart_app_minimum_version_android' => $martExternalSetting ? externalConfig('mart_app_minimum_version_android')?->value : null,
+            'mart_app_url_ios' => $martExternalSetting ? externalConfig('mart_app_url_ios')?->value : "",
+            'mart_app_minimum_version_ios' => $martExternalSetting ? externalConfig('mart_app_minimum_version_ios')?->value : null,
         ];
 
         return response()->json($configs);
@@ -218,9 +250,8 @@ class ConfigController extends Controller
                 $trip->coordinate->destination_coordinates->latitude,
                 $trip->coordinate->destination_coordinates->longitude,
             ];
-            $intermediateCoordinates = $trip->coordinate->intermediate_coordinates ? json_decode($$trip->coordinate->intermediate_coordinates, true) : [] ;
-        }
-        else {
+            $intermediateCoordinates = $trip->coordinate->intermediate_coordinates ? json_decode($$trip->coordinate->intermediate_coordinates, true) : [];
+        } else {
             $destinationCoordinates = [
                 $trip->coordinate->pickup_coordinates->latitude,
                 $trip->coordinate->pickup_coordinates->longitude,
@@ -228,15 +259,15 @@ class ConfigController extends Controller
         }
 
         return getRoutes(
-            originCoordinates:$pickupCoordinates,
-            destinationCoordinates:$destinationCoordinates,
-            intermediateCoordinates:$intermediateCoordinates,
+            originCoordinates: $pickupCoordinates,
+            destinationCoordinates: $destinationCoordinates,
+            intermediateCoordinates: $intermediateCoordinates,
         ); //["DRIVE", "TWO_WHEELER"]
 
         $result = [];
         foreach ($getRoutes as $route) {
             if ($route['drive_mode'] == $drivingMode) {
-                $result['is_picked'] =  $trip->current_status == ONGOING;
+                $result['is_picked'] = $trip->current_status == ONGOING;
                 return [array_merge($result, $route)];
             }
         }
@@ -318,7 +349,18 @@ class ConfigController extends Controller
             'ongoing_ride' => $ongoingRide,
             'accepted_ride' => $acceptedRide,
         ];
-        return response(responseFormatter(DEFAULT_200, [$data]));
+        return response(responseFormatter(DEFAULT_200, $data));
+    }
+
+    public function parcelCancellationReasonList()
+    {
+        $ongoingRide = $this->parcelCancellationReasonService->getBy(criteria: ['cancellation_type' => 'ongoing_ride', 'user_type' => 'customer', 'is_active' => 1])->pluck('title')->toArray();
+        $acceptedRide = $this->parcelCancellationReasonService->getBy(criteria: ['cancellation_type' => 'accepted_ride', 'user_type' => 'customer', 'is_active' => 1])->pluck('title')->toArray();
+        $data = [
+            'ongoing_ride' => $ongoingRide,
+            'accepted_ride' => $acceptedRide,
+        ];
+        return response(responseFormatter(DEFAULT_200, $data));
     }
 
 }

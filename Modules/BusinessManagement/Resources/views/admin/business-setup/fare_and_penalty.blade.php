@@ -13,7 +13,7 @@
                     </div>
                 </div>
                 <div class="card mb-3 text-capitalize">
-                    <form action="{{route('admin.business.setup.trip-fare.store')}}?type=trip_fare_settings" id="fare_and_penalty_form" method="POST">
+                    <form action="{{route('admin.business.setup.trip-fare.store')."?type=".TRIP_FARE_SETTINGS}}" id="fare_and_penalty_form" method="POST">
                         @csrf
                         <div class="card-header">
                             <h5 class="d-flex align-items-center gap-2">

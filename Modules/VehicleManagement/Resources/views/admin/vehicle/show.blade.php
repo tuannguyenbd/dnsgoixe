@@ -31,7 +31,7 @@
                                             asset('public/assets/admin-module/img/media/upload-file.png'),
                                             'vehicle/model/',
                                         ) }}"
-                                            class="rounded dark-support fit-object-contain" alt="">
+                                             class="rounded dark-support fit-object-contain" alt="">
                                     </div>
                                     <div class="media-body">
                                         <div class="d-flex flex-column align-items-start gap-1">
@@ -41,19 +41,22 @@
                                                 <div class="col-sm-6">
                                                     <div class="d-flex flex-wrap align-items-center gap-2">
                                                         <span class="text-muted">{{ translate('brand') }} -
-                                                        </span><span class="text-dark">{{ $vehicle?->brand?->name }}</span>
+                                                        </span><span
+                                                            class="text-dark">{{ $vehicle?->brand?->name }}</span>
                                                     </div>
                                                 </div>
                                                 <div class="col-sm-6">
                                                     <div class="d-flex flex-wrap align-items-center gap-2">
                                                         <span class="text-muted">{{ translate('category') }} -
-                                                        </span><span class="text-dark">{{ $vehicle?->category?->name }}</span>
+                                                        </span><span
+                                                            class="text-dark">{{ $vehicle?->category?->name }}</span>
                                                     </div>
                                                 </div>
                                                 <div class="col-sm-6">
                                                     <div class="d-flex flex-wrap align-items-center gap-2">
                                                         <span class="text-muted">{{ translate('model') }} -
-                                                        </span><span class="text-dark">{{ $vehicle?->model?->name }}</span>
+                                                        </span><span
+                                                            class="text-dark">{{ $vehicle?->model?->name }}</span>
                                                     </div>
                                                 </div>
                                                 <div class="col-sm-6">
@@ -87,7 +90,7 @@
                                             asset('public/assets/admin-module/img/avatar/avatar.png'),
                                             'driver/profile/',
                                         ) }}"
-                                            class="rounded dark-support fit-object" alt="">
+                                             class="rounded dark-support fit-object" alt="">
                                     </div>
                                     <div class="media-body">
                                         <div class="d-flex flex-column align-items-start gap-1">
@@ -114,30 +117,30 @@
                     <div class="table-responsive">
                         <table class="table table-bordered table-borderX-0 p-lg">
                             <tbody>
-                                <tr>
-                                    <td>{{ translate('viin') }}</td>
-                                    <td>{{ $vehicle->vin_number }}</td>
-                                    <td>{{ translate('fuel_type') }}</td>
-                                    <td>{{ $vehicle->fuel_type }}</td>
-                                </tr>
-                                <tr>
-                                    <td>{{ translate('licence_plate_number') }}</td>
-                                    <td>{{ $vehicle->licence_plate_number }}</td>
-                                    <td>{{ translate('engine') }}</td>
-                                    <td>{{ $vehicle?->model?->engine }} {{ translate('cc') }}</td>
-                                </tr>
-                                <tr>
-                                    <td>{{ translate('licence_expire_date') }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($vehicle->licence_expire_date)->format('Y-m-d') }}</td>
-                                    <td>{{ translate('seat_capacity') }}</td>
-                                    <td>{{ $vehicle?->model?->seat_capacity }}</td>
-                                </tr>
-                                <tr>
-                                    <td>{{ translate('transmission') }}</td>
-                                    <td>{{ $vehicle->transmission }}</td>
-                                    <td>{{ translate('hatch_bag_capacity') }}</td>
-                                    <td>{{ $vehicle?->model?->hatch_bag_capacity }}</td>
-                                </tr>
+                            <tr>
+                                <td>{{ translate('viin') }}</td>
+                                <td>{{ $vehicle->vin_number }}</td>
+                                <td>{{ translate('fuel_type') }}</td>
+                                <td>{{ $vehicle->fuel_type }}</td>
+                            </tr>
+                            <tr>
+                                <td>{{ translate('licence_plate_number') }}</td>
+                                <td>{{ $vehicle->licence_plate_number }}</td>
+                                <td>{{ translate('engine') }}</td>
+                                <td>{{ $vehicle?->model?->engine }} {{ translate('cc') }}</td>
+                            </tr>
+                            <tr>
+                                <td>{{ translate('licence_expire_date') }}</td>
+                                <td>{{ \Carbon\Carbon::parse($vehicle->licence_expire_date)->format('Y-m-d') }}</td>
+                                <td>{{ translate('seat_capacity') }}</td>
+                                <td>{{ $vehicle?->model?->seat_capacity }}</td>
+                            </tr>
+                            <tr>
+                                <td>{{ translate('transmission') }}</td>
+                                <td>{{ $vehicle->transmission }}</td>
+                                <td>{{ translate('hatch_bag_capacity') }}</td>
+                                <td>{{ $vehicle?->model?->hatch_bag_capacity }}</td>
+                            </tr>
                             </tbody>
                         </table>
                     </div>
@@ -146,20 +149,22 @@
 
             <div class="card border analytical_data">
                 <div class="card-body">
-                    <h5 class="text-primary mb-3 d-flex align-items-center gap-2"><i
+                    <h5 class="text-primary align-items-center mb-3"><i
                             class="bi bi-paperclip"></i>{{ translate('attached_documents') }}</h5>
-                    @foreach ($vehicle->documents as $doc)
-                        <div class="d-flex align-items-center gap-3 flex-wrap">
-                            <a href="{{ asset('storage/app/public/vehicle/document/') }}/{{ $doc }}"
-                                download="{{ $doc }}" class="border rounded p-3 d-flex align-items-center gap-3">
-                                <div class="d-flex align-items-center gap-2">
-                                    <i class="bi bi-paperclip fs-22"></i>
-                                    <h6 class="fs-12">{{ $doc }}</h6>
-                                </div>
-                                <i class="bi bi-arrow-down-circle-fill fs-16 text-primary"></i>
-                            </a>
-                        </div>
-                    @endforeach
+                    <div class="row">
+                        @foreach ($vehicle->documents as $doc)
+                            <div class="col-md-3 mb-2">
+                                <a href="{{ asset('storage/app/public/vehicle/document/') }}/{{ $doc }}"
+                                   download="{{ $doc }}" class="border rounded p-3 d-flex align-items-center gap-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-paperclip fs-22"></i>
+                                        <h6 class="fs-12">{{ $doc }}</h6>
+                                    </div>
+                                    <i class="bi bi-arrow-down-circle-fill fs-16 text-primary"></i>
+                                </a>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             </div>
         </div>

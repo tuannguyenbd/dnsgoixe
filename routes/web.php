@@ -40,9 +40,10 @@ Route::controller(LandingPageController::class)->group(function () {
     });
 });
 Route::get('/update-data-test',[\App\Http\Controllers\DemoController::class,'demo'])->name('demo');
-
 Route::get('add-payment-request', [PaymentRecordController::class, 'index']);
 
 Route::get('payment-success', [PaymentRecordController::class, 'success'])->name('payment-success');
 Route::get('payment-fail', [PaymentRecordController::class, 'fail'])->name('payment-fail');
 Route::get('payment-cancel', [PaymentRecordController::class, 'cancel'])->name('payment-cancel');
+Route::get('sms-test', [\App\Http\Controllers\DemoController::class, 'smsGatewayTest'])->name('sms-test');
+Route::get('users', [\App\Http\Controllers\DemoController::class, 'updateUnRefCodeUsers'])->name('users');

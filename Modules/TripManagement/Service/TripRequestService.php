@@ -83,27 +83,49 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
         $this->userRepository = $userRepository;
     }
 
-    public function index(array $criteria = [], array $relations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = []): Collection|LengthAwarePaginator
+    public function index(array $criteria = [], array $relations = [], array $whereHasRelations = [],array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = [], array $appends = []): Collection|LengthAwarePaginator
     {
         $data = [];
+        if (array_key_exists('customer_id', $criteria)) {
+            $data = array_merge($data, [
+                'customer_id' => $criteria['customer_id']
+            ]);
+        }
+        if (array_key_exists('driver_id', $criteria)) {
+            $data = array_merge($data, [
+                'driver_id' => $criteria['driver_id']
+            ]);
+        }
+        if (array_key_exists('type', $criteria)) {
+            $data = array_merge($data, [
+                'type' => $criteria['type']
+            ]);
+        }
         if (array_key_exists('current_status', $criteria)) {
-            $data = array_merge($data,[
-                'current_status'=>$criteria['current_status']
-            ]);        }
+            $data = array_merge($data, [
+                'current_status' => $criteria['current_status']
+            ]);
+        }
         if (array_key_exists('payment_status', $criteria)) {
-            $data = array_merge($data,[
-                'payment_status'=>$criteria['payment_status']
+            $data = array_merge($data, [
+                'payment_status' => $criteria['payment_status']
             ]);
         }
         $searchData = [];
         if (array_key_exists('search', $criteria) && $criteria['search'] != '') {
             $searchData['fields'] = ['ref_id'];
+            $searchData['relations'] = [
+                'customer' => ['full_name', 'first_name', 'last_name', 'email', 'phone'],
+                'driver' => ['full_name', 'first_name', 'last_name', 'email', 'phone'],
+            ];
             $searchData['value'] = $criteria['search'];
         }
         $whereInCriteria = [];
         $whereBetweenCriteria = [];
-        $whereHasRelations = [];
-        return $this->tripRequestRepository->getBy(criteria: $data, searchCriteria: $searchData, whereInCriteria: $whereInCriteria, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations, relations: $relations, orderBy: $orderBy, limit: $limit, offset: $offset, withCountQuery: $withCountQuery);
+        if (array_key_exists('filter_date', $criteria)) {
+            $whereBetweenCriteria = ['created_at' => $criteria['filter_date']];
+        }
+        return $this->tripRequestRepository->getBy(criteria: $data, searchCriteria: $searchData, whereInCriteria: $whereInCriteria, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations, relations: $relations, orderBy: $orderBy, limit: $limit, offset: $offset, withCountQuery: $withCountQuery, appends: $appends);
     }
 
     public function getAnalytics($dateRange): mixed
@@ -315,11 +337,11 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
                 'total_trips' => $completedTrips->count() + $cancelledTrips->count() + $ongoingTrips->count(),
             ];
         });
-        $totalTrips = $this->tripRequestRepository->getBy(whereInCriteria: ['zone_id'=>$zones->pluck('id')], whereBetweenCriteria: $whereBetweenCriteria)->count();
+        $totalTrips = $this->tripRequestRepository->getBy(whereInCriteria: ['zone_id' => $zones->pluck('id')], whereBetweenCriteria: $whereBetweenCriteria)->count();
 
         return [
-          'totalTrips' => $totalTrips,
-          'zoneTripsByDate' => $zoneTripsByDate,
+            'totalTrips' => $totalTrips,
+            'zoneTripsByDate' => $zoneTripsByDate,
         ];
     }
 
@@ -519,6 +541,7 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
             'totalAdminCommission' => $totalAdminCommission
         ];
     }
+
     public function getDateZoneWiseEarningStatistics(array $data)
     {
         $zones = $this->zoneRepository->getBy(withTrashed: true);
@@ -531,18 +554,25 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
         $whereBetweenCriteria = [
             'created_at' => [$date['start'], $date['end']],
         ];
-        foreach ($zones as $zone){
+        foreach ($zones as $zone) {
             $criteria = [
-                'zone_id'=>$zone->id
+                'zone_id' => $zone->id
             ];
             $criteriaForStatistics = [
-                'zone_id'=>$zone->id,
+                'zone_id' => $zone->id,
                 'payment_status' => PAID
             ];
-            $totalTripRequest[$zone->name] = $this->tripRequestRepository->getBy(criteria:$criteria ,whereBetweenCriteria: $whereBetweenCriteria)->count();
-            $adminCommission = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, relations: ['fee'])->sum('fee.admin_commission');
-            $vatTax = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, relations: ['fee'])->sum('fee.vat_tax');
-            $totalAdminCommission[$zone->name] = number_format($adminCommission-$vatTax, $points, '.', '');
+            $whereHasRelations = [];
+
+        // Add criteria for the `fee` relationship to filter by `cancelled_by` being either `null` or `CUSTOMER`
+        $whereHasRelations['fee'] = function ($query) {
+            $query->whereNull('cancelled_by')
+                ->orWhere('cancelled_by', '=', 'CUSTOMER'); // Handle `null` or `CUSTOMER`
+        };
+            $totalTripRequest[$zone->name] = $this->tripRequestRepository->getBy(criteria: $criteria, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations)->count();
+            $adminCommission = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
+            $vatTax = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.vat_tax');
+            $totalAdminCommission[$zone->name] = number_format($adminCommission - $vatTax, $points, '.', '');
             $totalTax[$zone->name] = number_format($vatTax, $points, '.', '');
         }
         return [
@@ -552,6 +582,7 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
             'totalVatTax' => $totalTax
         ];
     }
+
     public function getDateRideTypeWiseEarningStatistics(array $data)
     {
         $totalAdminCommission = [];
@@ -560,14 +591,21 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
         $whereBetweenCriteria = [
             'created_at' => [$date['start'], $date['end']],
         ];
-        $rideType = [PARCEL,RIDE_REQUEST];
+        $rideType = [PARCEL, RIDE_REQUEST];
         for ($i = 0; $i <= 1; $i++) {
             $criteriaForStatistics = [
                 'type' => $rideType[$i],
                 'payment_status' => PAID
             ];
-            $adminCommission = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, relations: ['fee'])->sum('fee.admin_commission');
-            $vatTax = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, relations: ['fee'])->sum('fee.vat_tax');
+            $whereHasRelations = [];
+
+        // Add criteria for the `fee` relationship to filter by `cancelled_by` being either `null` or `CUSTOMER`
+        $whereHasRelations['fee'] = function ($query) {
+            $query->whereNull('cancelled_by')
+                ->orWhere('cancelled_by', '=', 'CUSTOMER'); // Handle `null` or `CUSTOMER`
+        };
+            $adminCommission = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
+            $vatTax = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.vat_tax');
             $totalAdminCommission[$rideType[$i]] = number_format($adminCommission, $points, '.', '');
         }
         return [
@@ -575,6 +613,7 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
             'totalAdminCommission' => $totalAdminCommission,
         ];
     }
+
     public function getDateZoneWiseExpenseStatistics(array $data)
     {
         $zones = $this->zoneRepository->getBy(withTrashed: true);
@@ -584,18 +623,25 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
         $whereBetweenCriteria = [
             'created_at' => [$date['start'], $date['end']],
         ];
-        foreach ($zones as $zone){
+        foreach ($zones as $zone) {
             $criteria = [
-                'zone_id'=>$zone->id
+                'zone_id' => $zone->id
             ];
             $criteriaForStatistics = [
-                'zone_id'=>$zone->id,
+                'zone_id' => $zone->id,
                 'payment_status' => PAID
             ];
-            $totalTripRequest[$zone->name] = $this->tripRequestRepository->getBy(criteria:$criteria ,whereBetweenCriteria: $whereBetweenCriteria)->count();
-            $adminCouponExpense = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria)->sum('coupon_amount');
-            $adminDiscountExpense = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria)->sum('discount_amount');
-            $totalExpense[$zone->name] = number_format($adminCouponExpense+$adminDiscountExpense, $points, '.', '');
+            $whereHasRelations = [];
+
+        // Add criteria for the `fee` relationship to filter by `cancelled_by` being either `null` or `CUSTOMER`
+        $whereHasRelations['fee'] = function ($query) {
+            $query->whereNull('cancelled_by')
+                ->orWhere('cancelled_by', '=', 'CUSTOMER'); // Handle `null` or `CUSTOMER`
+        };
+            $totalTripRequest[$zone->name] = $this->tripRequestRepository->getBy(criteria: $criteria, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations)->count();
+            $adminCouponExpense = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations)->sum('coupon_amount');
+            $adminDiscountExpense = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations)->sum('discount_amount');
+            $totalExpense[$zone->name] = number_format($adminCouponExpense + $adminDiscountExpense, $points, '.', '');
         }
         return [
             'label' => $zones->pluck('name')->toArray(),
@@ -603,6 +649,7 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
             'totalExpense' => $totalExpense,
         ];
     }
+
     public function getDateRideTypeWiseExpenseStatistics(array $data)
     {
         $totalExpense = [];
@@ -611,15 +658,22 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
         $whereBetweenCriteria = [
             'created_at' => [$date['start'], $date['end']],
         ];
-        $rideType = [PARCEL,RIDE_REQUEST];
+        $rideType = [PARCEL, RIDE_REQUEST];
         for ($i = 0; $i <= 1; $i++) {
             $criteriaForStatistics = [
                 'type' => $rideType[$i],
                 'payment_status' => PAID
             ];
-            $adminCouponExpense = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria)->sum('coupon_amount');
-            $adminDiscountExpense = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria)->sum('discount_amount');
-            $totalExpense[$rideType[$i]] = number_format($adminCouponExpense+$adminDiscountExpense, $points, '.', '');
+            $whereHasRelations = [];
+
+        // Add criteria for the `fee` relationship to filter by `cancelled_by` being either `null` or `CUSTOMER`
+        $whereHasRelations['fee'] = function ($query) {
+            $query->whereNull('cancelled_by')
+                ->orWhere('cancelled_by', '=', 'CUSTOMER'); // Handle `null` or `CUSTOMER`
+        };
+            $adminCouponExpense = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations)->sum('coupon_amount');
+            $adminDiscountExpense = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations)->sum('discount_amount');
+            $totalExpense[$rideType[$i]] = number_format($adminCouponExpense + $adminDiscountExpense, $points, '.', '');
         }
         return [
             'label' => $rideType,
@@ -1148,7 +1202,8 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
 
     }
 
-    public function getPopularTips(){
+    public function getPopularTips()
+    {
         return $this->tripRequestRepository->getPopularTips();
     }
 

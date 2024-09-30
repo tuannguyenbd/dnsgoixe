@@ -11,6 +11,7 @@ Route::group(['prefix' => 'customer'], function () {
 
         Route::controller(TransactionController::class)->group(function () {
             Route::get('list', 'list');
+            Route::get('referral-earning-list', 'referralEarningHistory');
         });
     });
 });
@@ -21,7 +22,9 @@ Route::group(['prefix' => 'driver'], function () {
 
         Route::controller(DriverTransactionController::class)->group(function () {
             Route::get('list', 'list');
+            Route::get('referral-earning-list', 'referralEarningHistory');
             Route::get('payable-list', 'payableTransactionHistory');
+            Route::get('cash-collect-list', 'cashCollectTransactionHistory');
             Route::get('wallet-list', 'walletTransactionHistory');
         });
     });

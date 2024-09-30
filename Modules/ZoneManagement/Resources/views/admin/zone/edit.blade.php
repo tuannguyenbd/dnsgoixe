@@ -52,9 +52,9 @@
                                     <div class="col-lg-7">
                                         <div class="mb-4">
                                             <label for="zone_name"
-                                                   class="form-label text-capitalize">{{ translate('zone_name') }}</label>
+                                                   class="form-label text-capitalize">{{ translate('zone_name') }} <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" name="name" id="zone_name"
-                                                   value="{{ $zone->name }}" placeholder="{{ translate('ex') }}: {{ translate('Dhanmondi') }}">
+                                                   value="{{ $zone->name }}" placeholder="{{ translate('ex') }}: {{ translate('Dhanmondi') }}" required>
                                         </div>
 
                                         <div class="form-group mb-3 d-none">

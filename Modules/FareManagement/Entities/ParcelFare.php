@@ -15,6 +15,8 @@ class ParcelFare extends Model
     protected $fillable = [
         'zone_id',
         'base_fare',
+        'return_fee',
+        'cancellation_fee',
         'base_fare_per_km',
         'cancellation_fee_percent',
         'min_cancellation_fee',
@@ -25,6 +27,7 @@ class ParcelFare extends Model
 
     protected $casts = [
         'base_fare' => 'float',
+        'cancellation_fee' => 'float',
         'base_fare_per_km' => 'float',
         'cancellation_fee_percent' => 'float',
         'min_cancellation_fee' => 'float',

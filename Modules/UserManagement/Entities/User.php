@@ -40,6 +40,7 @@ class User extends Authenticatable
         'email_verified_at',
         'loyalty_points',
         'password',
+        'ref_code',
         'user_type',
         'role_id',
         'remember_token',
@@ -73,6 +74,15 @@ class User extends Authenticatable
     public function scopeOfActive($query, $value = true)
     {
         return $query->where('is_active', $value);
+    }
+
+    public function referralCustomerDetails()
+    {
+        return $this->hasOne(ReferralCustomer::class,'customer_id','id');
+    }
+    public function referralDriverDetails()
+    {
+        return $this->hasOne(ReferralDriver::class,'driver_id','id');
     }
 
     public function role()

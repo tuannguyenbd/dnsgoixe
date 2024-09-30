@@ -8,12 +8,12 @@ $text = businessConfig('text_color')?->value
 
 <style>
     :root {
-        --text-primary: {{$color['primary'] ?? '#14B19E'}};
-        --text-secondary: {{$color['secondary'] ?? '#D7F9F5'}};
-        --bs-body-bg: {{$color['background'] ?? '#F4FCFB'}} ;
-        --bs-primary: {{$color['primary'] ?? '#14B19E'}};
-        --bs-secondary-rgb: {{$color['secondary'] ?? '#D7F9F5'}};
-        --bs-secondary: {{$color['secondary'] ?? '#D7F9F5'}};
+        --text-primary: {{$color['primary'] ?? 'var(--text-primary)'}};
+        --text-secondary: {{$color['secondary'] ?? 'var(--text-secondary)'}};
+        --bs-body-bg: {{$color['background'] ?? 'var(--bs-body-bg)'}};
+        --bs-primary: {{$color['primary'] ?? 'var(--bs-primary)'}};
+        --bs-secondary-rgb: {{$color['secondary'] ?? 'var(--bs-secondary-rgb)'}};
+        --bs-secondary: {{$color['secondary'] ?? 'var(--bs-secondary)'}};
     }
 </style>
 
@@ -22,8 +22,8 @@ $text = businessConfig('text_color')?->value
 @if(isset($text))
     <style>
         :root {
-            --title-color: {{$text['primary'] ?? '#293231'}};
-            --title-color-rgb: {{$text['secondary'] ?? '41, 50, 49'}};
+            --title-color: {{$text['primary'] ?? 'var(--title-color)'}};
+            --title-color-rgb: {{$text['secondary'] ?? 'var(--title-color-rgb)'}};
         }
     </style>
 @endif

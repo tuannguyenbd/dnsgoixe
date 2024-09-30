@@ -372,6 +372,8 @@
         let iconContent = $(obj).data('icon');
         let titleContent = $(obj).data('title');
         let subTitleContent = $(obj).data('sub-title');
+        let confirmBtnContent = $(obj).data('confirm-btn');
+        let cancelBtnContent = $(obj).data('cancel-btn');
 
 
         let value = $(obj).prop('checked') === true ? 1 : 0;
@@ -396,7 +398,15 @@
             $("#subTitle").html("");
             $("#subTitle").html(subTitleContent);
         }
-        // let subTitle = document.getElementById("subTitle");
+        if(confirmBtnContent){
+            $("#modalConfirmBtn").html("");
+            $("#modalConfirmBtn").html(confirmBtnContent);
+        }
+        if(cancelBtnContent){
+            $("#modalCancelBtn").html("");
+            $("#modalCancelBtn").html(cancelBtnContent);
+        }
+
 
         let confirmBtn = document.getElementById("modalConfirmBtn");
         let cancelBtn = document.getElementById("modalCancelBtn");

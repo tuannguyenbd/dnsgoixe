@@ -26,7 +26,7 @@
 
             @can('dashboard')
                 <div class="row gy-4">
-                    <div class="col-lg-6">
+                    <div class="col-md-7">
                         <div class="row g-3">
                             <div class="col-sm-6">
                                 <div class="card">
@@ -36,22 +36,8 @@
                                                 <img src="{{asset('public/assets/admin-module/img/svg/user-grp.svg')}}"
                                                      class="svg" alt="">
                                             </div>
-                                            <h3 class="fs-24">{{$customers}}</h3>
+                                            <h3 class="fs-24">{{abbreviateNumber($customers)}}</h3>
                                             <div class="title-color text-capitalize">{{ translate('Total Active Customers')}}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="card">
-                                    <div class="p-30">
-                                        <div class="d-flex flex-column gap-2">
-                                            <div class="level-status fs-5 p-2 bg-warning w-48 aspect-1 mb-3">
-                                                <img src="{{asset('public/assets/admin-module/img/svg/earning.svg')}}"
-                                                     class="svg" alt="">
-                                            </div>
-                                            <h3 class="fs-24">{{ set_currency_symbol($superAdminAccount->received_balance + $superAdminAccount->receivable_balance) }}</h3>
-                                            <div class="title-color text-capitalize">{{ translate('Total Earnings')}}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -65,7 +51,7 @@
                                                      src="{{asset('public/assets/admin-module/img/svg/driver2.svg')}}"
                                                      class="svg" alt="">
                                             </div>
-                                            <h3 class="fs-24">{{$drivers}}</h3>
+                                            <h3 class="fs-24">{{abbreviateNumber($drivers)}}</h3>
                                             <div class="title-color text-capitalize">{{ translate('Total Active Drivers')}}</div>
                                         </div>
                                     </div>
@@ -75,19 +61,56 @@
                                 <div class="card">
                                     <div class="p-30">
                                         <div class="d-flex flex-column gap-2">
-                                            <div class="level-status fs-5 p-2 bg-success w-48 aspect-1 mb-3">
-                                                <img src="{{asset('public/assets/admin-module/img/svg/revenue.svg')}}"
+                                            <div class="level-status fs-5 p-2 bg-warning w-48 aspect-1 mb-3">
+                                                <img src="{{asset('public/assets/admin-module/img/svg/earning.svg')}}"
                                                      class="svg" alt="">
                                             </div>
-                                            <h3 class="fs-24">{{ $totalTrips }}</h3>
-                                            <div class="title-color text-capitalize">{{ translate('Total Trips')}}</div>
+                                            <h3 class="fs-24">{{abbreviateNumberWithSymbol($totalEarning) }}</h3>
+                                            <div class="title-color text-capitalize">{{ translate('Total Earnings')}}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="card">
+                                    <div class="p-30">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="level-status fs-5 p-2 bg-success w-48 aspect-1">
+                                                <img src="{{asset('public/assets/admin-module/img/svg/ride-sharing.svg')}}" class="svg" alt="">
+                                            </div>
+                                            <div>
+                                                <h3 class="fs-20">
+                                                    {{ abbreviateNumberWithSymbol($totalTripsEarning) }}
+                                                    <small class="fw-normal fs-14">{{translate('Earn')}}</small>
+                                                </h3>
+                                                <h3 class="fs-18">
+                                                    <span class="fw-normal fs-14 title-color text-capitalize">{{ translate('Total Trip')}}</span>
+                                                    {{ abbreviateNumber($totalTrips) }}
+                                                </h3>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="level-status fs-5 p-2 bg-purple w-48 aspect-1">
+                                                <img src="{{asset('public/assets/admin-module/img/svg/parcel.svg')}}" class="svg" alt="">
+                                            </div>
+                                            <div>
+                                                <h3 class="fs-20">
+                                                    {{ abbreviateNumberWithSymbol($totalParcelsEarning) }}
+                                                    <small class="fw-normal fs-14">{{translate('Earn')}}</small>
+                                                </h3>
+                                                <h3 class="fs-18">
+                                                    <span class="fw-normal fs-14 title-color text-capitalize">{{ translate('Total Parcel')}}</span>
+                                                    {{ abbreviateNumber($totalParcels) }}
+                                                </h3>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-6">
+                    <div class="col-md-5">
                         <div class="card mb-3 h-100">
                             <div class="card-header d-flex flex-wrap justify-content-between gap-10">
                                 <div class="d-flex flex-column gap-1">
@@ -228,7 +251,8 @@
                                                     <h5>{{ getCurrencyFormat($transaction->debit ?? 0) }} Debited
                                                         from {{ucwords(str_replace('_',' ', $transaction->account))}}</h5>
                                                 @else
-                                                    <h5>{{ getCurrencyFormat($transaction->credit ?? 0) }} Công nợ phải thu</h5>
+                                                    <h5>{{ getCurrencyFormat($transaction->credit ?? 0) }} Credited
+                                                        to {{ucwords(str_replace('_',' ', $transaction->account))}}</h5>
                                                 @endif
                                             </div>
                                             @php($time_format = getSession('time_format'))

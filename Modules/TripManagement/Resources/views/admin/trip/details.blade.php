@@ -147,7 +147,7 @@
 
 
                         {{-- TRIP SUMMARY FOR PENDING OR CANCELLED RIDE --}}
-                        @if ($trip->current_status == PENDING || $trip->current_status == ACCEPTED || $trip->current_status == ONGOING)
+                        @if ($trip->current_status == PENDING || $trip->current_status == ACCEPTED || $trip->current_status == ONGOING || $trip->current_status == RETURNING)
                             <div class="col-12">
                                 <div class="card">
                                     <div class="card-body">
@@ -198,7 +198,7 @@
                         @endif
                         {{-- END TRIP SUMMARY FOR PENDING OR CANCELLED RIDE --}}
 
-                        @if ($trip->current_status == 'completed' || $trip->current_status == 'cancelled')
+                        @if ($trip->current_status == COMPLETED || $trip->current_status == CANCELLED || $trip->current_status == RETURNED)
                             <div class="col-12">
                                 <div class="card">
                                     <div class="card-body">
@@ -231,7 +231,7 @@
                                                     class="d-flex align-items-center justify-content-sm-end gap-3 gap-sm-0">
                                                     <div class="text-capitalize">{{ translate('order_status') }}:
                                                     </div>
-                                                    <h6 class="fs-12 text-info text-sm-end w-100p {{ $trip->current_status == 'cancelled' ? 'text-danger' : '' }}">
+                                                    <h6 class="fs-12 text-info text-sm-end w-100p {{ $trip->current_status == CANCELLED ? 'text-danger' : '' }}">
                                                         {{ translate($trip->current_status) }}</h6>
                                                 </div>
                                                 <div
@@ -295,6 +295,19 @@
                                                     <dd class="m-0">
                                                         + {{ set_currency_symbol($trip?->fee?->cancellation_fee) }}</dd>
                                                 @endif
+                                                @if ($trip->type == 'parcel' && $trip->current_status == RETURNED && $trip->fee?->cancelled_by == CUSTOMER)
+
+                                                    <dt class="ps-custom-4">
+                                                        <div class="d-flex align-items-center gap-2 text-capitalize">
+                                                            {{ translate('return_fee') }} <i
+                                                                class="bi bi-info-circle-fill text-primary tooltip-icon"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-title="{{ translate('the_Fee(in_percentage)_charged_from_the_customer_to_cancel_the_trip') }}"></i>
+                                                        </div>
+                                                    </dt>
+                                                    <dd class="m-0">
+                                                        + {{ set_currency_symbol($trip?->return_fee) }}</dd>
+                                                @endif
 
                                                 <dt class="text-capitalize">{{ translate('discount_amount') }}
                                                     <i
@@ -321,7 +334,7 @@
                                                 <dt>
                                                     {{ translate('VAT/Tax') }}
                                                     <small
-                                                        class="font-semi-bold"><strong>({{ round((($trip?->fee?->vat_tax ?? 0) * 100) / $totalAmount) }}
+                                                        class="font-semi-bold"><strong>({{ round((($trip?->fee?->vat_tax ?? 0) * 100) / ( $totalAmount == 0 ? 1: $totalAmount)) }}
                                                             %)</strong></small>
                                                 </dt>
                                                 <dd class="m-0">

@@ -24,23 +24,25 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class BannerSetupController extends BaseController
 {
     use AuthorizesRequests;
+    protected $bannerSetupService;
 
-    public function __construct(BannerSetupServiceInterface $baseService)
+    public function __construct(BannerSetupServiceInterface $bannerSetupService)
     {
-        parent::__construct($baseService);
+        parent::__construct($bannerSetupService);
+        $this->bannerSetupService = $bannerSetupService;
     }
 
     public function index(?Request $request, string $type = null): View|Collection|LengthAwarePaginator|null|callable|RedirectResponse
     {
         $this->authorize('promotion_view');
-        $banners = $this->baseService->index(criteria: $request?->all(), orderBy: ['created_at' => 'desc'], limit: paginationLimit(), offset: $request['page']??1);
+        $banners = $this->bannerSetupService->index(criteria: $request?->all(), orderBy: ['created_at' => 'desc'], limit: paginationLimit(), offset: $request['page']??1);
         return view('promotionmanagement::admin.banner-setup.index', compact('banners'));
     }
 
     public function store(BannerSetupStoreUpdateRequest $request)
     {
         $this->authorize('promotion_add');
-        $this->baseService->create(data: $request->validated());
+        $this->bannerSetupService->create(data: $request->validated());
         Toastr::success(BANNER_STORE_200['message']);
         return back();
     }
@@ -48,14 +50,14 @@ class BannerSetupController extends BaseController
     public function edit($id)
     {
         $this->authorize('promotion_edit');
-        $banner = $this->baseService->findOne(id: $id);
+        $banner = $this->bannerSetupService->findOne(id: $id);
         return view('promotionmanagement::admin.banner-setup.edit', compact('banner'));
     }
 
     public function update(BannerSetupStoreUpdateRequest $request, $id)
     {
         $this->authorize('promotion_edit');
-        $this->baseService->update(id: $id, data: $request->validated());
+        $this->bannerSetupService->update(id: $id, data: $request->validated());
         Toastr::success(BANNER_UPDATE_200['message']);
         return back();
 
@@ -64,7 +66,7 @@ class BannerSetupController extends BaseController
     public function destroy($id)
     {
         $this->authorize('promotion_delete');
-        $this->baseService->delete(id: $id);
+        $this->bannerSetupService->delete(id: $id);
         Toastr::success(BANNER_DESTROY_200['message']);
         return back();
     }
@@ -75,7 +77,7 @@ class BannerSetupController extends BaseController
         $request->validate([
             'status' => 'boolean'
         ]);
-        $model = $this->baseService->statusChange(id: $request->id, data: $request->all());
+        $model = $this->bannerSetupService->statusChange(id: $request->id, data: $request->all());
         return response()->json($model);
     }
 
@@ -83,7 +85,7 @@ class BannerSetupController extends BaseController
     public function trashed(Request $request): View
     {
         $this->authorize('super-admin');
-        $banners = $this->baseService->trashedData(criteria: $request->all(), limit: paginationLimit(), offset: $request['page']??1);
+        $banners = $this->bannerSetupService->trashedData(criteria: $request->all(), limit: paginationLimit(), offset: $request['page']??1);
         return view('promotionmanagement::admin.banner-setup.trashed', compact('banners'));
     }
 
@@ -91,7 +93,7 @@ class BannerSetupController extends BaseController
     {
         $this->authorize('super-admin');
 
-        $this->baseService->restoreData(id: $id);
+        $this->bannerSetupService->restoreData(id: $id);
 
         Toastr::success(DEFAULT_RESTORE_200['message']);
         return redirect()->route('admin.promotion.banner-setup.index');
@@ -101,7 +103,7 @@ class BannerSetupController extends BaseController
     public function permanentDelete($id)
     {
         $this->authorize('super-admin');
-        $this->baseService->permanentDelete(id: $id);
+        $this->bannerSetupService->permanentDelete(id: $id);
         Toastr::success(BANNER_DESTROY_200['message']);
         return back();
     }
@@ -109,7 +111,7 @@ class BannerSetupController extends BaseController
     public function export(Request $request): View|Factory|Response|StreamedResponse|string|Application
     {
         $this->authorize('promotion_export');
-        $banner = $this->baseService->getBy(criteria: $request->all());
+        $banner = $this->bannerSetupService->getBy(criteria: $request->all());
         $data = $banner->map(function ($item) {
             return [
                 'id' => $item['id'],

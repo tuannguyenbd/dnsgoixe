@@ -28,6 +28,7 @@ Route::group(['prefix' => 'customer', 'middleware' => ['auth:api', 'maintenance_
             Route::put('cancel-coupon', 'cancelCoupon');
             Route::get('ongoing-parcel-list', 'pendingParcelList');
             Route::get('unpaid-parcel-list', 'unpaidParcelRequest');
+            Route::put('received-returning-parcel/{trip_request_id}', 'receivedReturningParcel');
         });
         Route::post('track-location', [DriverTripController::class, 'trackLocation']);
         Route::get('payment', [PaymentController::class, 'payment']);
@@ -59,6 +60,8 @@ Route::group(['prefix' => 'driver', 'middleware' => ['auth:api', 'maintenance_mo
             Route::post('ignore-trip-notification', 'ignoreTripNotification');
             Route::get('ongoing-parcel-list', 'pendingParcelList');
             Route::get('unpaid-parcel-list', 'unpaidParcelRequest');
+            Route::put('returned-parcel', 'returnedParcel');
+            Route::put('resend-otp', 'resendOtp');
         });
         Route::get('final-fare', [TripRequestController::class, 'finalFareCalculation']);
         Route::get('payment', [PaymentController::class, 'payment']);

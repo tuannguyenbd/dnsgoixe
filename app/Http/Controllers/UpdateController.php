@@ -57,7 +57,7 @@ class UpdateController extends Controller
         $this->setEnvironmentValue('SOFTWARE_ID', 'MTAwMDAwMDA=');
         $this->setEnvironmentValue('BUYER_USERNAME', $request['username']);
         $this->setEnvironmentValue('PURCHASE_CODE', $request['purchase_key']);
-        $this->setEnvironmentValue('SOFTWARE_VERSION', '1.7');
+        $this->setEnvironmentValue('SOFTWARE_VERSION', '1.8');
         $this->setEnvironmentValue('APP_ENV', 'local');
         $this->setEnvironmentValue('APP_MODE', 'live');
         $this->setEnvironmentValue('APP_URL', url('/'));
@@ -254,18 +254,18 @@ class UpdateController extends Controller
                 'value' => 'You got a new message from {userName}',
                 'status' => 1
             ]);
-        }else{
-            $this->firebasePushNotificationService->updatedBy(criteria: ['name' => 'new_message'],data: [
+        } else {
+            $this->firebasePushNotificationService->updatedBy(criteria: ['name' => 'new_message'], data: [
                 'value' => 'You got a new message from {userName}',
                 'status' => 1
             ]);
         }
         if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'payment_successful']) == true) {
             $this->firebasePushNotificationService->updatedBy(criteria: ['name' => 'payment_successful'],
-                data:[
-                'value' => '{paidAmount} payment successful on this trip by {methodName}.',
-                'status' => 1
-            ]);
+                data: [
+                    'value' => '{paidAmount} payment successful on this trip by {methodName}.',
+                    'status' => 1
+                ]);
         }
         if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'withdraw_request_rejected']) == false) {
             $this->firebasePushNotificationService->create(data: ['name' => 'withdraw_request_rejected',
@@ -303,6 +303,37 @@ class UpdateController extends Controller
                 'status' => 1
             ]);
         }
+        if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'someone_used_your_code']) == false) {
+            $this->firebasePushNotificationService->create(data: ['name' => 'someone_used_your_code',
+                'value' => "Your code was successfully used by a friend. You'll receive your reward after their first ride is completed.",
+                'status' => 1
+            ]);
+        }
+        if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'referral_reward_received']) == false) {
+            $this->firebasePushNotificationService->create(data: ['name' => 'referral_reward_received',
+                'value' => "You've successfully received {referralRewardAmount} reward. You can use this amount on your next ride.",
+                'status' => 1
+            ]);
+        }
+        if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'parcel_returned']) == false) {
+            $this->firebasePushNotificationService->create(data: ['name' => 'parcel_returned',
+                'value' => "Parcel returned successfully",
+                'status' => 1
+            ]);
+        }
+        if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'parcel_returning_otp']) == false) {
+            $this->firebasePushNotificationService->create(data: ['name' => 'parcel_returning_otp',
+                'value' => "Your parcel returning OTP is {otp}",
+                'status' => 1
+            ]);
+        }
+        $emptyRefCodeUsers = User::withTrashed()->whereNull('ref_code')->get();
+        foreach ($emptyRefCodeUsers as $user) {
+            generateReferralCode($user);
+        }
+        insertBusinessSetting(keyName: 'return_time_for_driver', settingType: PARCEL_SETTINGS, value: 24);
+        insertBusinessSetting(keyName: 'return_time_type_for_driver', settingType: PARCEL_SETTINGS, value: "hour");
+        insertBusinessSetting(keyName: 'return_fee_for_driver_time_exceed', settingType: PARCEL_SETTINGS, value: 0);
         return redirect(env('APP_URL'));
     }
 }

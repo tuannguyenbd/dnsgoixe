@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Modules\BusinessManagement\Http\Controllers\Web\New\Admin\BusinessSetup\BusinessInfoController;
 use Modules\BusinessManagement\Http\Controllers\Web\New\Admin\BusinessSetup\CustomerSettingController;
 use Modules\BusinessManagement\Http\Controllers\Web\New\Admin\BusinessSetup\DriverSettingController;
+use Modules\BusinessManagement\Http\Controllers\Web\New\Admin\BusinessSetup\ExternalConfigurationController;
+use Modules\BusinessManagement\Http\Controllers\Web\New\Admin\BusinessSetup\ParcelSettingController;
+use Modules\BusinessManagement\Http\Controllers\Web\New\Admin\BusinessSetup\ReferralEarningSettingController;
 use Modules\BusinessManagement\Http\Controllers\Web\New\Admin\BusinessSetup\TripFareSettingController;
 use Modules\BusinessManagement\Http\Controllers\Web\New\Admin\Configuration\NotificationController;
 use Modules\BusinessManagement\Http\Controllers\Web\New\Admin\Configuration\PaymentConfigController;
@@ -36,6 +39,25 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
                     Route::post('store', 'store')->name('store');
                 });
             });
+            Route::group(['prefix' => 'parcel', 'as' => 'parcel.'], function () {
+                Route::controller(ParcelSettingController::class)->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::post('store', 'store')->name('store');
+                    Route::group(['prefix' => 'cancellation-reason', 'as' => 'cancellation_reason.'], function () {
+                        Route::post('store', 'storeCancellationReason')->name('store');
+                        Route::get('edit/{id}', 'editCancellationReason')->name('edit');
+                        Route::post('update/{id}', 'updateCancellationReason')->name('update');
+                        Route::delete('delete/{id}', 'destroyCancellationReason')->name('delete');
+                        Route::get('status', 'statusCancellationReason')->name('status');
+                    });
+                });
+            });
+            Route::group(['prefix' => 'referral-earning', 'as' => 'referral-earning.'], function () {
+                Route::controller(ReferralEarningSettingController::class)->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::post('store', 'store')->name('store');
+                });
+            });
 
             Route::group(['prefix' => 'customer', 'as' => 'customer.'], function () {
                 Route::controller(CustomerSettingController::class)->group(function () {
@@ -49,7 +71,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
                     Route::get('penalty', 'index')->name('penalty');
                     Route::get('trips', 'tripIndex')->name('trips');
                     Route::post('store', 'store')->name('store');
-                    Route::group(['prefix' => 'cancellation-reason', 'as' =>'cancellation_reason.'],function (){
+                    Route::group(['prefix' => 'cancellation-reason', 'as' => 'cancellation_reason.'], function () {
                         Route::post('store', 'storeCancellationReason')->name('store');
                         Route::get('edit/{id}', 'editCancellationReason')->name('edit');
                         Route::post('update/{id}', 'updateCancellationReason')->name('update');
@@ -59,6 +81,13 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
                 });
             });
         });
+        Route::group(['prefix' => 'external', 'as' => 'external.'], function () {
+            Route::controller(ExternalConfigurationController::class)->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::post('store', 'store')->name('store');
+            });
+        });
+
 
         Route::group(['prefix' => 'configuration', 'as' => 'configuration.'], function () {
             Route::group(['prefix' => 'notification', 'as' => 'notification.'], function () {
@@ -100,7 +129,6 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
                     });
                 });
             });
-
         });
 
         Route::group(['prefix' => 'pages-media', 'as' => 'pages-media.'], function () {

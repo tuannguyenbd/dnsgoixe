@@ -2,10 +2,11 @@
 
 namespace Modules\BusinessManagement\Entities;
 
+use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\BusinessManagement\Database\factories\CancellationReasonFactory;
-use Modules\Gateways\Traits\HasUuid;
+
 
 class CancellationReason extends Model
 {

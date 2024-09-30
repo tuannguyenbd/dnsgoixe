@@ -20,7 +20,7 @@ class VehicleService extends BaseService implements VehicleServiceInterface
     }
 
 
-    public function index(array $criteria = [], array $relations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = []): Collection|LengthAwarePaginator
+    public function index(array $criteria = [], array $relations = [], array $whereHasRelations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = [], array $appends = []): Collection|LengthAwarePaginator
     {
         $data = [];
         if (array_key_exists('status', $criteria) && $criteria['status'] !== 'all') {
@@ -28,7 +28,7 @@ class VehicleService extends BaseService implements VehicleServiceInterface
         }
         $searchData = [];
         if (array_key_exists('search', $criteria) && $criteria['search'] != '') {
-            $searchData['fields'] = ['licence_plate_number','vin_number'];
+            $searchData['fields'] = ['licence_plate_number', 'vin_number'];
             $searchData['value'] = $criteria['search'];
         }
         $whereInCriteria = [];
@@ -40,8 +40,8 @@ class VehicleService extends BaseService implements VehicleServiceInterface
     public function create(array $data): ?Model
     {
         $documents = [];
-        if (array_key_exists('upload_documents', $data)) {
-            foreach ($data['upload_documents'] as $doc) {
+        if (array_key_exists('other_documents', $data)) {
+            foreach ($data['other_documents'] as $doc) {
                 $extension = $doc->getClientOriginalExtension();
                 $documents[] = fileUploader('vehicle/document/', $extension, $doc);
             }
@@ -65,8 +65,6 @@ class VehicleService extends BaseService implements VehicleServiceInterface
 
     public function update(int|string $id, array $data = []): ?Model
     {
-        $model = $this->findOne(id: $id);
-
         $updateData = [
             'brand_id' => $data['brand_id'],
             'model_id' => $data['model_id'],
@@ -80,14 +78,22 @@ class VehicleService extends BaseService implements VehicleServiceInterface
             'ownership' => $data['ownership'],
             'driver_id' => $data['driver_id'],
         ];
-        if ($data['upload_documents'] ?? null) {
-            $documents = [];
-            foreach ($data['upload_documents'] as $doc) {
+
+
+        $existingDocuments = array_key_exists('existing_documents', $data) ? $data['existing_documents'] : [];
+        $deletedDocuments = array_key_exists('existing_documents', $data) ? explode(',', $data['deleted_documents']) : [];
+
+        // Remove deleted documents from the existing list
+        $documents = array_diff($existingDocuments, $deletedDocuments);
+
+        // Handle new uploads
+        if ($data['other_documents'] ?? null) {
+            foreach ($data['other_documents'] as $doc) {
                 $extension = $doc->getClientOriginalExtension();
-                $documents[] = fileUploader('vehicle/document/', $extension, $doc, $model?->documents);
+                $documents[] = fileUploader('vehicle/document/', $extension, $doc);
             }
-            $updateData['documents'] = $documents;
         }
+        $updateData['documents'] = $documents;
         return $this->vehicleRepository->update($id, $updateData);
     }
 
@@ -96,7 +102,7 @@ class VehicleService extends BaseService implements VehicleServiceInterface
         return $this->index(criteria: $criteria, relations: $relations, orderBy: $orderBy)->map(function ($item) {
             return [
                 'Id' => $item['id'],
-                'Driver Name' => $item?->driver?->full_name ?? $item?->driver?->first_name .' '. $item?->driver?->last_name ,
+                'Driver Name' => $item?->driver?->full_name ?? $item?->driver?->first_name . ' ' . $item?->driver?->last_name,
                 'Type' => ucwords(str_replace('_', ' ', $item?->category?->type ?? 'N/A')),
                 'Brand' => $item->brand->name,
                 'Model' => $item->model->name,

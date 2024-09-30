@@ -12,22 +12,27 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Modules\AuthManagement\Http\Requests\AuthApiRequest;
-use Modules\AuthManagement\Http\Requests\ChangePasswordRequest;
-use Modules\AuthManagement\Http\Requests\UserRegisterApiRequest;
 use Modules\AuthManagement\Service\Interface\AuthServiceInterface;
-use Modules\Gateways\Traits\SmsGateway;
+use Modules\TransactionManagement\Traits\TransactionTrait;
 use Modules\TripManagement\Interfaces\TripRequestInterfaces;
+use Modules\UserManagement\Service\Interface\CustomerAccountServiceInterface;
 use Modules\UserManagement\Service\Interface\CustomerLevelServiceInterface;
 use Modules\UserManagement\Service\Interface\CustomerServiceInterface;
+use Modules\UserManagement\Service\Interface\DriverAccountServiceInterface;
 use Modules\UserManagement\Service\Interface\DriverLevelServiceInterface;
 use Modules\UserManagement\Service\Interface\DriverServiceInterface;
 use Modules\UserManagement\Service\Interface\OtpVerificationServiceInterface;
+use Modules\UserManagement\Service\Interface\ReferralCustomerServiceInterface;
+use Modules\UserManagement\Service\Interface\ReferralDriverServiceInterface;
 
 class AuthController extends Controller
 {
+    use TransactionTrait;
+
     protected $trip;
     protected $customerService;
     protected $driverService;
@@ -35,15 +40,23 @@ class AuthController extends Controller
     protected $driverLevelService;
     protected $authService;
     protected $otpVerificationService;
+    protected $referralCustomerService;
+    protected $referralDriverService;
+    protected $customerAccountService;
+    protected $driverAccountService;
 
     public function __construct(
-        TripRequestInterfaces           $trip,
-        CustomerServiceInterface        $customerService,
-        DriverServiceInterface          $driverService,
-        CustomerLevelServiceInterface   $customerLevelService,
-        DriverLevelServiceInterface     $driverLevelService,
-        AuthServiceInterface            $authService,
-        OtpVerificationServiceInterface $otpVerificationService
+        TripRequestInterfaces            $trip,
+        CustomerServiceInterface         $customerService,
+        DriverServiceInterface           $driverService,
+        CustomerLevelServiceInterface    $customerLevelService,
+        DriverLevelServiceInterface      $driverLevelService,
+        AuthServiceInterface             $authService,
+        OtpVerificationServiceInterface  $otpVerificationService,
+        ReferralCustomerServiceInterface $referralCustomerService,
+        ReferralDriverServiceInterface   $referralDriverService,
+        CustomerAccountServiceInterface  $customerAccountService,
+        DriverAccountServiceInterface    $driverAccountService
     )
     {
         $this->trip = $trip;
@@ -53,6 +66,10 @@ class AuthController extends Controller
         $this->driverLevelService = $driverLevelService;
         $this->authService = $authService;
         $this->otpVerificationService = $otpVerificationService;
+        $this->referralCustomerService = $referralCustomerService;
+        $this->referralDriverService = $referralDriverService;
+        $this->customerAccountService = $customerAccountService;
+        $this->driverAccountService = $driverAccountService;
     }
 
     public function register(Request $request): JsonResponse
@@ -70,8 +87,9 @@ class AuthController extends Controller
             'identity_images' => 'sometimes|array',
             'identity_images.*' => 'image|mimes:jpeg,jpg,png,gif|max:10000',
             'fcm_token' => 'sometimes',
+            'referral_code' => 'sometimes',
             'service' => [
-                Rule::requiredIf(function ()use ($driverRoute){
+                Rule::requiredIf(function () use ($driverRoute) {
                     return $driverRoute;
                 })
             ]
@@ -80,9 +98,16 @@ class AuthController extends Controller
 
             return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
         }
-        $route = str_contains($request->route()->getPrefix(), 'customer');
-        if (!$route && !businessConfig('driver_self_registration')?->value) {
 
+        $route = str_contains($request->route()->getPrefix(), 'customer');
+
+        if (array_key_exists('referral_code', $request->all()) && $request->referral_code) {
+            $referralUser = $route ? $this->customerService->findOneBy(criteria: ['ref_code' => $request->referral_code, 'user_type' => CUSTOMER]) : $this->driverService->findOneBy(criteria: ['ref_code' => $request->referral_code, 'user_type' => DRIVER]);
+            if (!$referralUser) {
+                return response()->json(responseFormatter(REFERRAL_CODE_NOT_MATCH_403), 403);
+            }
+        }
+        if (!$route && !businessConfig('driver_self_registration')?->value) {
             return response()->json(responseFormatter(SELF_REGISTRATION_400), 403);
         }
         $firstLevel = $route ? $this->customerLevelService->findOneBy(['user_type' => CUSTOMER, 'sequence' => 1]) : $this->driverLevelService->findOneBy(['user_type' => DRIVER, 'sequence' => 1]);
@@ -90,7 +115,73 @@ class AuthController extends Controller
 
             return response()->json(responseFormatter(LEVEL_403), 403);
         }
+
         $user = $route ? $this->customerService->create($request->all()) : $this->driverService->create($request->all());
+        if (array_key_exists('referral_code', $request->all()) && $request->referral_code && $referralUser && $user) {
+            if ($route) {
+                if (referralEarningSetting('referral_earning_status', CUSTOMER)?->value) {
+                    $referralCustomerData = [
+                        'customer_id' => $user->id,
+                        'ref_by' => $referralUser->id,
+                        'ref_by_earning_amount' => (double)referralEarningSetting('share_code_earning', CUSTOMER)?->value,
+                    ];
+                    $useCodeEarning = referralEarningSetting('use_code_earning', CUSTOMER)?->value;
+                    if ($useCodeEarning && array_key_exists('first_ride_discount_status', $useCodeEarning) && $useCodeEarning['first_ride_discount_status']) {
+                        $referralCustomerData = array_merge($referralCustomerData, [
+                            'customer_discount_amount' => array_key_exists('discount_amount', $useCodeEarning) && $useCodeEarning['discount_amount'] ? $useCodeEarning['discount_amount'] : 0,
+                            'customer_discount_amount_type' => array_key_exists('discount_amount_type', $useCodeEarning) && $useCodeEarning['discount_amount_type'] ? $useCodeEarning['discount_amount_type'] : null,
+                            'customer_discount_validity' => array_key_exists('discount_validity', $useCodeEarning) && $useCodeEarning['discount_validity'] ? $useCodeEarning['discount_validity'] : 0,
+                            'customer_discount_validity_type' => $useCodeEarning['discount_validity'] && array_key_exists('discount_validity_type', $useCodeEarning) && $useCodeEarning['discount_validity_type'] ? $useCodeEarning['discount_validity_type'] : null,
+                        ]);
+                    }
+                    $this->referralCustomerService->create($referralCustomerData);
+                    $push = getNotification('someone_used_your_code');
+                    sendDeviceNotification(fcm_token: $referralUser?->fcm_token,
+                        title: translate($push['title']),
+                        description: translate(textVariableDataFormat(value: $push['description'])),
+                        ride_request_id: $referralUser?->id,
+                        action: 'referral_code_used',
+                        user_id: $referralUser?->id
+                    );
+                }
+            } else if (referralEarningSetting('referral_earning_status', DRIVER)?->value) {
+                $referralDriverData = [
+                    'driver_id' => $user->id,
+                    'ref_by' => $referralUser->id,
+                    'ref_by_earning_amount' => (double)referralEarningSetting('share_code_earning', DRIVER)?->value,
+                    'driver_earning_amount' => (double)referralEarningSetting('use_code_earning', DRIVER)?->value,
+                    'is_used' => true
+                ];
+                $referralDriver = $this->referralDriverService->create($referralDriverData);
+
+
+                #TODO
+                if ($referralDriver?->ref_by_earning_amount && $referralDriver?->ref_by_earning_amount > 0) {
+                    $this->driverReferralEarningTransaction($referralUser, $referralDriver?->ref_by_earning_amount);
+                    $push = getNotification('referral_reward_received');
+                    sendDeviceNotification(fcm_token: $referralUser?->fcm_token,
+                        title: translate($push['title']),
+                        description: translate(textVariableDataFormat(value: $push['description'], referralRewardAmount: getCurrencyFormat($referralDriver?->ref_by_earning_amount))),
+                        ride_request_id: $referralUser?->id,
+                        action: 'referral_reward_received',
+                        user_id: $referralUser?->id
+                    );
+                }
+                if ($referralDriver?->driver_earning_amount > 0) {
+                    $this->driverReferralEarningTransaction($user, $referralDriver?->driver_earning_amount);
+                    if ($request->fcm_token) {
+                        $push = getNotification('referral_reward_received');
+                        sendDeviceNotification(fcm_token: $request->fcm_token,
+                            title: translate($push['title']),
+                            description: translate(textVariableDataFormat(value: $push['description'], referralRewardAmount: getCurrencyFormat($referralDriver?->driver_earning_amount))),
+                            ride_request_id: $user?->id,
+                            action: 'referral_reward_received',
+                            user_id: $user?->id
+                        );
+                    }
+                }
+            }
+        }
 
         /**
          * phone no verification SMS_Body
@@ -201,15 +292,15 @@ class AuthController extends Controller
     {
         $user = $this->driverService->findOne(auth('api')->id());
 
-        if ($user->user_type == DRIVER){
-                if(count($user->getDriverLastTrip())!=0|| $user?->userAccount->payable_balance>0 || $user?->userAccount->pending_balance>0 || $user?->userAccount->receivable_balance>0){
-                    return response()->json(responseFormatter(
-                        constant: AUTH_LOGIN_403,
-                        errors: [['error_code' => 403, 'message' => translate("Sorry! you can't delete your account, because your ride is ongoing or your payment is due.")]]), 403);
-                }
+        if ($user->user_type == DRIVER) {
+            if (count($user->getDriverLastTrip()) != 0 || $user?->userAccount->payable_balance > 0 || $user?->userAccount->pending_balance > 0 || $user?->userAccount->receivable_balance > 0) {
+                return response()->json(responseFormatter(
+                    constant: AUTH_LOGIN_403,
+                    errors: [['error_code' => 403, 'message' => translate("Sorry! you can't delete your account, because your ride is ongoing or your payment is due.")]]), 403);
+            }
         }
-        if ($user->user_type == CUSTOMER){
-            if(count($user->getCustomerUnpaidParcelAndTrips())>0|| count($user->getCustomerPendingTrips())>0|| count($user->getCustomerAcceptedTrips())>0 || count($user->getCustomerOngingTrips())>0 ){
+        if ($user->user_type == CUSTOMER) {
+            if (count($user->getCustomerUnpaidParcelAndTrips()) > 0 || count($user->getCustomerPendingTrips()) > 0 || count($user->getCustomerAcceptedTrips()) > 0 || count($user->getCustomerOngingTrips()) > 0) {
                 return response()->json(responseFormatter(
                     constant: AUTH_LOGIN_403,
                     errors: [['error_code' => '403', 'message' => translate("Sorry! you can't delete your account, because your ride is ongoing or payment due.")]]), 403);
@@ -481,6 +572,23 @@ class AuthController extends Controller
                 'password' => bcrypt($request['new_password'])
             ];
             $this->authService->updateLoginUser(id: $user->id, data: $attributes);
+            //Mart profile update
+            if (checkSelfExternalConfiguration()) {
+                $martBaseUrl = externalConfig('mart_base_url')?->value;
+                $systemSelfToken = externalConfig('system_self_token')?->value;
+                $martToken = externalConfig('mart_token')?->value;
+                try {
+                    $response = Http::asForm()->post($martBaseUrl . '/api/v1/customer/external-update-data',
+                        [
+                            'bearer_token' => $request->bearerToken(),
+                            'token' => $martToken,
+                            'external_base_url' => url('/'),
+                            'external_token' => $systemSelfToken,
+                        ]);
+                } catch (\Exception $exception) {
+
+                }
+            }
             return response()->json(responseFormatter(constant: DEFAULT_PASSWORD_CHANGE_200));
         }
         return response()->json(responseFormatter(constant: DEFAULT_PASSWORD_MISMATCH_403), 403);
@@ -494,6 +602,121 @@ class AuthController extends Controller
             'is_phone_verified' => is_null($user['phone_verified_at']) ? 0 : 1,
             'is_profile_verified' => $user->isProfileVerified(),
         ];
+    }
+
+    public function customerRegistrationFromMart(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required',
+            'last_name' => 'required',
+            'email' => 'email|unique:users',
+            'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:8|max:17|unique:users',
+            'password' => 'required|min:8',
+        ]);
+        if ($validator->fails()) {
+            $data = [
+                'status' => false,
+                'errors' => errorProcessor($validator),
+            ];
+            return response()->json(data: $data);
+        }
+        try {
+            $customer = $this->customerService->create($request->all());
+            $data = [
+                'status' => true,
+                'data' => $customer
+            ];
+            return response()->json(data: $data);
+        } catch (\Exception $exception) {
+            $data = [
+                'status' => false,
+                'errors' => ['error_code' => $exception->getCode(), 'message' => translate($exception->getMessage())],
+            ];
+            return response()->json(data: $data);
+        }
+    }
+
+    public function customerLoginFromMart(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone_or_email' => 'required',
+            'token' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
+        }
+        $customer = $this->customerService->findOneBy(criteria: ['phone' => $request->phone_or_email, 'user_type' => CUSTOMER]);
+        if (checkSelfExternalConfiguration()) {
+            $martBaseUrl = externalConfig('mart_base_url')?->value;
+            $systemSelfToken = externalConfig('system_self_token')?->value;
+            $martToken = externalConfig('mart_token')?->value;
+            if (!$customer) {
+                try {
+                    $response = Http::withToken($request->token)->post($martBaseUrl . '/api/v1/customer/get-data',
+                        [
+                            'token' => $martToken,
+                            'external_base_url' => url('/'),
+                            'external_token' => $systemSelfToken,
+                        ]);
+
+                    if ($response->successful()) {
+                        $martCustomerResponse = $response->json();
+                        if ($martCustomerResponse['status']) {
+                            $martCustomer = $martCustomerResponse['data'];
+                            $customerData = [
+                                'first_name' => $martCustomer['f_name'],
+                                'last_name' => $martCustomer['l_name'],
+                                'email' => $martCustomer['email'],
+                                'phone' => $martCustomer['phone'],
+                                'password' => $martCustomer['password'],
+                                'phone_verified_at' => $martCustomer['is_phone_verified'] == 1 ? now() : null,
+                            ];
+                            $customer = $this->customerService->findOneBy(criteria: ['email' => $customerData['email']]);
+                            if ($customer) {
+                                return response()->json(responseFormatter([
+                                    'response_code' => 'email_unique_402',
+                                    'message' => 'Email already exists, Please update mart email and switch drivemond',
+                                ]), 403);
+                            }
+                            $customer = $this->customerService->createExternalCustomer($customerData);
+                        } else {
+                            $martCustomer = $martCustomerResponse['data'];
+                            if ($martCustomer['error_code'] == 402) {
+                                return response()->json(responseFormatter([
+                                    'response_code' => 'mart_external_configuration_402',
+                                    'message' => 'Mart external authentication failed',
+                                ]), 403);
+                            }
+                        }
+
+                    } else {
+                        return response()->json(responseFormatter([
+                            'response_code' => 'mart_user_404',
+                            'message' => 'Mart user not found',
+                        ]), 403);
+                    }
+                } catch (\Exception $exception) {
+
+                }
+
+            }
+
+            if (Auth::loginUsingId($customer->id) && $customer->is_active) {
+                $customerData = [
+                    'failed_attempt' => 0,
+                    'is_temp_blocked' => 0,
+                    'blocked_at' => null,
+                ];
+                $customer = $this->authService->update(id: $customer->id, data: $customerData);
+                return response()->json(responseFormatter(AUTH_LOGIN_200, $this->authenticate($customer, CUSTOMER_PANEL_ACCESS)));
+            }
+
+            return response()->json(responseFormatter(AUTH_LOGIN_401), 403);
+        }
+        return response()->json(responseFormatter([
+            'response_code' => 'external_config_404',
+            'message' => 'External configuration not found',
+        ]), 403);
     }
 
 

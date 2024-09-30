@@ -33,9 +33,10 @@ We may release future updates, so it will overwrite this file. it's better and s
 (function ($) {
     ("use strict");
 
-    /*===================
+    /*==================
   01: Main Menu
-  =====================*/
+  =======================*/
+
     /* Parent li add class */
     let body = $("body");
     $(".aside .aside-body")
@@ -49,14 +50,69 @@ We may release future updates, so it will overwrite this file. it's better and s
         .on("click", function (event) {
             event.preventDefault();
             if (!body.hasClass("aside-folded")) {
-                $(this).parent(".has-sub-item").toggleClass("sub-menu-opened");
-                if ($(this).siblings("ul").hasClass("open")) {
-                    $(this).siblings("ul").removeClass("open").slideUp("200");
+                let $submenu = $(this).siblings("ul");
+                let $parentItem = $(this).parent(".has-sub-item");
+
+                $parentItem.toggleClass("sub-menu-opened");
+                if ($submenu.hasClass("open")) {
+                    // Closing the submenu
+                    $submenu.removeClass("open").slideUp("200", function () {
+                        adjustScrollAfterCollapse($submenu);
+                    });
                 } else {
-                    $(this).siblings("ul").addClass("open").slideDown("200");
+                    // Opening the submenu
+                    $submenu.addClass("open").slideDown("200", function () {
+                        adjustScroll($submenu);
+                    });
                 }
             }
         });
+
+    /* Function to adjust scroll to make the submenu fully visible */
+    function adjustScroll($submenu) {
+        let submenuRect = $submenu[0].getBoundingClientRect();
+        let viewportHeight = $(window).height();
+        let scrollContainer = $(".aside .aside-body")[0];
+
+        // Check if the submenu is out of the viewport
+        if (submenuRect.bottom > viewportHeight) {
+            let scrollOffset = submenuRect.bottom - viewportHeight;
+            scrollContainer.scrollTop += scrollOffset + 10;
+        } else if (submenuRect.top < 0) {
+            scrollContainer.scrollTop += submenuRect.top - 10;
+        }
+    }
+
+    /* Function to adjust scroll after collapsing a submenu */
+    function adjustScrollAfterCollapse($submenu) {
+        let submenuRect = $submenu[0].getBoundingClientRect();
+        let viewportHeight = $(window).height();
+        let scrollContainer = $(".aside .aside-body")[0];
+
+        // Check if the collapsed submenu is still affecting the viewport
+        if (submenuRect.bottom > viewportHeight || submenuRect.top < 0) {
+            scrollContainer.scrollTop -= submenuRect.height + 10;
+        }
+    }
+
+    /* Activate Menu */
+    function activateMenu($item) {
+        // Add active class to the menu item
+        $(".aside .aside-body .has-sub-item").removeClass("active");
+        $item.addClass("active");
+
+        // Call adjustScroll to ensure active item is visible
+        let $submenu = $item.find("ul");
+        if ($submenu.length) {
+            adjustScroll($submenu);
+        }
+    }
+
+    /* function to simulate menu activation */
+    function simulateMenuActivation() {
+        let $activeItem = $(".aside .aside-body .has-sub-item.active");
+        activateMenu($activeItem);
+    }
 
     /* window resize trigger aside function */
     $(window).on("resize", function () {
@@ -66,10 +122,10 @@ We may release future updates, so it will overwrite this file. it's better and s
     /* Aside function */
     function aside() {
         if ($(window).width() > 1199) {
-            /* Remove siderbar-open */
+            /* Remove sidebar-open */
             body.removeClass("aside-open");
 
-            /* Holded aside */
+            /* Folded aside */
             $(".aside-toggle").on("click", function () {
                 body.toggleClass("aside-folded");
                 localStorage.setItem(
@@ -90,11 +146,6 @@ We may release future updates, so it will overwrite this file. it's better and s
             $(".aside-toggle").on("click", function () {
                 body.toggleClass("aside-open");
                 $(".offcanvas-overlay").toggleClass("aside-active");
-                // body
-                // .find(".aside-body .has-sub-item a")
-                // .siblings("ul")
-                // .removeClass("open")
-                // .slideUp("fast");
             });
             $(".offcanvas-overlay").on("click", function () {
                 body.removeClass("aside-open");
@@ -103,9 +154,10 @@ We may release future updates, so it will overwrite this file. it's better and s
             $(".offcanvas-overlay").removeClass("aside-active");
         }
     }
+
     aside();
 
-    /* Aside Folded Defien Submenu Top */
+    /* Aside Folded Define Submenu Top */
     function asideFoldedShowSubMenu() {
         $("body.aside-folded .aside-body .main-nav > .has-sub-item").on(
             "mouseenter",
@@ -117,6 +169,7 @@ We may release future updates, so it will overwrite this file. it's better and s
             }
         );
     }
+
     $(".aside .aside-body").on("scroll", asideFoldedShowSubMenu);
 
     /* Active Menu Open */
@@ -130,6 +183,8 @@ We may release future updates, so it will overwrite this file. it's better and s
             .siblings("ul")
             .addClass("open")
             .show();
+
+        simulateMenuActivation(); // Simulate activation on load (can be removed or replaced with actual logic)
     });
 
     /*========================
@@ -247,6 +302,7 @@ We may release future updates, so it will overwrite this file. it's better and s
             localStorage.setItem("theme", themeName);
         });
     }
+
     themeSwitcher(".setting-box.light-mode", "light");
     themeSwitcher(".setting-box.dark-mode", "dark");
 
@@ -258,6 +314,7 @@ We may release future updates, so it will overwrite this file. it's better and s
             localStorage.setItem("dir", dirName);
         });
     }
+
     rtlSwitcher(".setting-box.ltr-mode", "ltr");
     rtlSwitcher(".setting-box.rtl-mode", "rtl");
 
@@ -321,22 +378,57 @@ We may release future updates, so it will overwrite this file. it's better and s
     });
 
     /*============================================
-  12: Multiple file upload
-  ==============================================*/
+ 12: Multiple file upload
+ ==============================================*/
+    let selectedFiles = [];
     $(document).ready(function () {
         $(".upload-file__input2").on("change", function (event) {
-            let files = event.target.files;
-            for (let i = 0; i < files.length; i++) {
-                let file = files[i];
-                $(
-                    "<div class='file__value'><div class='file__value--text'>" +
-                        file.name +
-                        "</div><div class='file__value--remove' data-id='" +
-                        file.name +
-                        "' ></div></div>"
-                ).insertBefore("#file__input");
+            for (let index = 0; index < this.files.length; ++index) {
+                selectedFiles.push(this.files[index]);
             }
+            displaySelectedFiles();
+            this.value = null;
         });
+
+        function displaySelectedFiles() {
+            const container = document.getElementById("input-data");
+            container.innerHTML = "";
+            selectedFiles.forEach((file, index) => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.name = `other_documents[${index}]`;
+                input.classList.add(`file-index${index}`);
+                input.hidden = true;
+                container.appendChild(input);
+                const blob = new Blob([file], { type: file.type });
+                const file_obj = new File([file], file.name);
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file_obj);
+                input.files = dataTransfer.files;
+            });
+            let fileArray = $("#selected-files-container");
+            fileArray.empty();
+            for (let index = 0; index < selectedFiles.length; ++index) {
+                let filereader = new FileReader();
+                let fileName = selectedFiles[index].name;
+                let fileDesign =
+                    "<div class='show-image'><div class='file__value'><div class='file__value--text'>" +
+                    fileName +
+                    "</div><div class='file__value--remove' data-id='" +
+                    fileName +
+                    "' ></div></div></div>";
+                let $uploadDiv = jQuery.parseHTML(fileDesign);
+                filereader.readAsDataURL(selectedFiles[index]);
+                fileArray.append($uploadDiv);
+                $($uploadDiv)
+                    .find(".file__value")
+                    .on("click", function () {
+                        $(this).closest(".show-image").remove();
+                        $(".file-index" + index).remove();
+                        selectedFiles.splice(selectedFiles.indexOf(index), 1);
+                    });
+            }
+        }
 
         //Click to remove item
         $("body").on("click", ".file__value", function () {

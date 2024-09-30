@@ -16,6 +16,25 @@
                     <ul class="nav justify-content-end align-items-center gap-30">
                         <li class="d-none d-md-block">
                         </li>
+                        @if(externalConfig('activation_mode')?->value ?? 0)
+                            <li>
+                                <form method="POST"
+                                      action="{{url(externalConfig( 'mart_base_url')?->value ."/external-login-from-drivemond")}}"
+                                      target="_blank">
+                                    @csrf
+                                    <input type="hidden" name="drivemond_token"
+                                           value="{{externalConfig('system_self_token')?->value ?? null}}">
+                                    <input type="hidden" name="drivemond_base_url" value="{{url('/')}}">
+                                    <input type="hidden" name="mart_token"
+                                           value="{{externalConfig('mart_token')?->value ?? null}}">
+                                    <button type="submit" class="btn btn-primary gap-2 cl-mart">
+                                        <img src="{{externalConfig('mart_business_logo')?->value?? asset('/public/assets/admin-module/img/mart-icon.png')}}"
+                                             alt="" width="15" height="15">
+                                        {{ (externalConfig('mart_business_name')?->value ?? "6amMart").' '.translate('Admin Panel')}}
+                                    </button>
+                                </form>
+                            </li>
+                        @endif
                         <li>
                             <!-- Header Localization -->
                             <div class="messages">

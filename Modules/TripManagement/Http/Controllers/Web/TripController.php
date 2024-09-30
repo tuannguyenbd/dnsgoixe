@@ -30,44 +30,6 @@ class TripController extends Controller
     {
     }
 
-    /**
-     * Display a listing of the resource.
-     * @return Application|Factory|View|JsonResponse
-     */
-    public function index($type, Request $request)
-    {
-        $this->authorize('trip_view');
-
-        $attributes = [];
-        $search = null;
-        $date = null;
-        if ($request->has('data')) {
-            $date = getDateRange($request->data);
-            if($date){
-                $attributes['from'] = $date['start'];
-                $attributes['to'] = $date['end'];
-            }
-
-        }
-        if($type != 'all'){
-            $attributes['column'] = 'current_status';
-            $attributes['value'] = $type;
-        }
-
-        $request->has('search') ? ($search = $attributes['search'] = $request->search) : null;
-        $trips = $this->trip->get(limit: paginationLimit(), offset: 1, attributes: $attributes, relations: ['tripStatus', 'customer', 'driver', 'fee']);
-        $trip_counts = null;
-        if ($type == 'all') {
-            $trip_counts = $this->trip->overviewStat(['from' => $date['start'] ?? null, 'to' => $date['end'] ?? null]);
-        }
-        if ($request->ajax()) {
-            return response()->json(view('tripmanagement::admin.trip.partials._trip-list-stat', compact('trip_counts', 'type'))->render());
-        }
-
-        return view('tripmanagement::admin.trip.index', compact('trips', 'type', 'trip_counts', 'search'));
-    }
-
-
 
     /**
      * Show the specified resource.

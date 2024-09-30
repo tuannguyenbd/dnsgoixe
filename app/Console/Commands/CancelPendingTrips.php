@@ -41,7 +41,7 @@ class CancelPendingTrips extends Command
     public function handle()
     {
         $activeMinutes = now()->subMinutes(get_cache('trip_request_active_time') ?? 10);
-        $pendingTripRequests = TripRequest::whereIn('current_status', [PENDING,ACCEPTED])
+        $pendingTripRequests = TripRequest::whereIn('current_status', [PENDING])
             ->where('updated_at', '<', $activeMinutes)
             ->get();
         foreach ($pendingTripRequests as $pendingTripRequest) {
@@ -67,7 +67,7 @@ class CancelPendingTrips extends Command
                 TempTripNotification::where('trip_request_id', $pendingTripRequest->id)->delete();
             }
         }
-        TripRequest::whereIn('current_status', [PENDING,ACCEPTED])
+        TripRequest::whereIn('current_status', [PENDING])
             ->where('updated_at', '<', $activeMinutes)->update([
                 'current_status' => 'cancelled',
             ]);

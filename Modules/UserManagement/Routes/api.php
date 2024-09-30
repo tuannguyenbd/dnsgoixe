@@ -8,10 +8,10 @@ use Modules\UserManagement\Http\Controllers\Api\Customer\AddressController;
 use Modules\UserManagement\Http\Controllers\Api\Customer\CustomerController;
 use Modules\UserManagement\Http\Controllers\Api\Customer\LoyaltyPointController;
 use Modules\UserManagement\Http\Controllers\Api\Driver\TimeTrackController;
+use Modules\UserManagement\Http\Controllers\Api\New\Customer\WalletTransferController;
 use Modules\UserManagement\Http\Controllers\Api\New\Driver\WithdrawController;
 use Modules\UserManagement\Http\Controllers\Api\New\Driver\WithdrawMethodInfoController;
 use Modules\UserManagement\Http\Controllers\Api\UserController;
-
 
 Route::group(['prefix' => 'customer'], function () {
     Route::group(['middleware' => ['auth:api', 'maintenance_mode']], function () {
@@ -29,8 +29,11 @@ Route::group(['prefix' => 'customer'], function () {
         });
         Route::get('notification-list', [AppNotificationController::class, 'index']);
         Route::controller(\Modules\UserManagement\Http\Controllers\Api\New\Customer\CustomerController::class)->group(function () {
+            Route::post('get-data', 'getCustomer');
+            Route::post('external-update-data', 'externalUpdateCustomer')->withoutMiddleware('auth:api');
             Route::post('applied-coupon', 'applyCoupon');
             Route::post('change-language', 'changeLanguage');
+            Route::get('referral-details', 'referralDetails');
         });
 
         Route::group(['prefix' => 'address'], function () {
@@ -40,6 +43,13 @@ Route::group(['prefix' => 'customer'], function () {
             Route::put('update', [AddressController::class, 'update']);
             Route::delete('delete', [AddressController::class, 'destroy']);
 
+        });
+
+        Route::group(['prefix' => 'wallet'], function () {
+            Route::controller(WalletTransferController::class)->group(function () {
+                Route::post('transfer-drivemond-to-mart', 'transferDrivemondToMartWallet');
+                Route::post('transfer-drivemond-from-mart', 'transferDrivemondFromMartWallet')->withoutMiddleware('auth:api');
+            });
         });
     });
 
@@ -65,13 +75,14 @@ Route::group(['prefix' => 'driver'], function () {
             Route::get('my-activity', 'myActivity');
             Route::post('change-language', 'changeLanguage');
             Route::get('info', 'profileInfo');
-            Route::get('income-statement',  'incomeStatement');
-            Route::put('update/profile',  'updateProfile');
+            Route::get('income-statement', 'incomeStatement');
+            Route::put('update/profile', 'updateProfile');
+            Route::get('referral-details', 'referralDetails');
         });
         //new controller
         Route::group(['prefix' => 'level'], function () {
             Route::controller(\Modules\UserManagement\Http\Controllers\Api\New\Driver\DriverLevelController::class)->group(function () {
-                Route::get('/',  'getDriverLevelWithTrip');
+                Route::get('/', 'getDriverLevelWithTrip');
             });
         });
         //new controller

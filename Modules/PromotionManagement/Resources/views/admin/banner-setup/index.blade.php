@@ -20,13 +20,13 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-4">
-                                        <label for="banner_title" class="mb-2">{{ translate('banner_title') }}</label>
+                                        <label for="banner_title" class="mb-2">{{ translate('banner_title') }} <span class="text-danger">*</span></label>
                                         <input type="text" value="{{ old('banner_title') }}" class="form-control"
                                                id="banner_title" name="banner_title" placeholder="Ex: 50% Off" required>
                                     </div>
                                     <div class="mb-4">
                                         <label for="sort_description"
-                                               class="mb-2">{{ translate('short_description') }}</label>
+                                               class="mb-2">{{ translate('short_description') }} <span class="text-danger">*</span></label>
                                         <div class="character-count">
                                             <textarea name="short_desc" id="sort_description" placeholder="Type Here..."
                                                       class="form-control character-count-field" cols="30"
@@ -36,7 +36,7 @@
                                         </div>
                                     </div>
                                     <div class="mb-4">
-                                        <label for="redirect_link" class="mb-2">{{ translate('redirect_link') }}</label>
+                                        <label for="redirect_link" class="mb-2">{{ translate('redirect_link') }} <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" value="{{ old('redirect_link') }}"
                                                id="redirect_link" name="redirect_link" placeholder="Ex: www.google.com"
                                                required>
@@ -46,7 +46,7 @@
                                     <div
                                         class="d-flex flex-column justify-content-around align-items-center gap-3 mb-4">
                                         <div class="d-flex align-items-center gap-2">
-                                            <h5 class="text-capitalize">{{ translate('banner_image') }}</h5>
+                                            <h5 class="text-capitalize">{{ translate('banner_image') }} <span class="text-danger">*</span></h5>
                                         </div>
 
                                         <div class="d-flex">
@@ -66,7 +66,7 @@
                                     </div>
 
                                     <div class="mb-4 text-capitalize">
-                                        <label for="time_period" class="mb-2">{{ translate('time_period') }}</label>
+                                        <label for="time_period" class="mb-2">{{ translate('time_period') }} <span class="text-danger">*</span></label>
                                         <select name="time_period" class="js-select" id="time_period"
                                                 aria-label="{{ translate('time_period') }}" required
                                                 onchange="toggleDatePick()">

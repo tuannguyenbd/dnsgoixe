@@ -22,7 +22,8 @@
                             <div class="col-md-6">
                                 <div class="row g-3">
                                     <div class="col-12">
-                                        <label for="title" class="mb-2">{{ translate('Title') }}
+                                        <label for="title" class="mb-2">{{ translate('Title') }} <span
+                                                class="text-danger">*</span>
                                         </label>
                                         <input type="text" id="title" value="{{$discount->title}}"
                                                maxlength="100"
@@ -32,7 +33,8 @@
                                     <div class="col-12">
                                         <label for="shortDescription"
                                                class="mb-2">{{ translate('short_description') }}
-                                            <small>({{translate('Max 800 character')}})</small>
+                                            <small>({{translate('Max 800 character')}}) <span
+                                                    class="text-danger">*</span></small>
                                         </label>
                                         <div class="character-count">
                                                     <textarea id="shortDescription" name="short_description" cols="30"
@@ -45,7 +47,8 @@
                                     <div class="col-12">
                                         <label for="termsConditions"
                                                class="mb-2">{{ translate('Terms & Conditions') }}
-                                            <small>({{translate('Max 1500 character')}})</small>
+                                            <small>({{translate('Max 1500 character')}})</small> <span
+                                                class="text-danger">*</span>
                                         </label>
                                         <div class="character-count">
                                                     <textarea id="termsConditions" name="terms_conditions" cols="30"
@@ -63,7 +66,8 @@
                                     <div
                                         class="d-flex flex-column justify-content-around align-items-center gap-3 mb-4">
                                         <div class="d-flex align-items-center gap-2">
-                                            <h5 class="text-capitalize">{{ translate('discount_image') }}</h5>
+                                            <h5 class="text-capitalize">{{ translate('discount_image') }} <span
+                                                    class="text-danger">*</span></h5>
                                         </div>
 
                                         <div class="d-flex">
@@ -96,17 +100,19 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="limitPerUser" class="mb-2">
-                                        {{ translate('Limit for Same User') }}
+                                        {{ translate('Limit for Same User') }} <span class="text-danger">*</span>
                                     </label>
                                     <input type="number" id="limitPerUser" name="limit_per_user"
                                            value="{{$discount->limit_per_user}}" min="1"
-                                           placeholder="{{translate('Ex : 10')}}" class="form-control">
+                                           placeholder="{{translate('Ex : 10')}}" class="form-control" required>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
-                                    <label for="discountAmount" id="discountAmountLabel"
-                                           class="mb-2">{{ translate('Discount Amount') }}</label>
+                                    <label for="discountAmount"
+                                           class="mb-2"><span
+                                            id="discountAmountLabel">{{ translate('Discount Amount') }}</span> <span
+                                            class="text-danger">*</span></label>
                                     <div class="position-relative text-center">
                                         <input type="number" id="discountAmount"
                                                value="{{$discount->discount_amount}}"
@@ -142,7 +148,8 @@
                                 <div class="mb-4">
                                     <label for="minTripAmount"
                                            class="mb-2">{{ translate('Min Trip Amount') }}
-                                        ({{session()->get('currency_symbol') ?? '$'}})
+                                        ({{session()->get('currency_symbol') ?? '$'}}) <span
+                                            class="text-danger">*</span>
                                     </label>
                                     <input type="number" id="minTripAmount" name="min_trip_amount"
                                            class="form-control" min="1"
@@ -153,7 +160,7 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="start_date"
-                                           class="mb-2">{{ translate('start_date') }}</label>
+                                           class="mb-2">{{ translate('start_date') }} <span class="text-danger">*</span></label>
                                     <input type="date"
                                            value="{{date('Y-m-d',strtotime($discount->start_date))}}"
                                            min="{{date('Y-m-d',strtotime(now()))}}"
@@ -163,7 +170,8 @@
                             </div>
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
-                                    <label for="end_date" class="mb-2">{{ translate('end_date') }}</label>
+                                    <label for="end_date" class="mb-2">{{ translate('end_date') }} <span
+                                            class="text-danger">*</span></label>
                                     <input type="date" id="end_date"
                                            value="{{date('Y-m-d',strtotime($discount->end_date))}}"
                                            min="{{date('Y-m-d',strtotime(now()))}}"
@@ -177,8 +185,10 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="customerLevelDiscountType"
-                                           class="mb-2">{{ translate('Select Customer Level') }}
-                                        <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
+                                           class="mb-2">{{ translate('Select Customer Level') }} <span
+                                            class="text-danger">*</span>
+                                        <i class="bi bi-info-circle-fill text-primary cursor-pointer"
+                                           data-bs-toggle="tooltip"
                                            title="{{ translate('customer_level_select_first_otherwise_customer_not_found_in_select_customer_dropdown') }}"></i>
                                     </label>
                                     <select class="js-select-2" id="customerLevelDiscountType"
@@ -197,11 +207,14 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="customerDiscountType"
-                                           class="mb-2">{{ translate('Select Customer') }}
-                                        <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
+                                           class="mb-2">{{ translate('Select Customer') }} <span
+                                            class="text-danger">*</span>
+                                        <i class="bi bi-info-circle-fill text-primary cursor-pointer"
+                                           data-bs-toggle="tooltip"
                                            title="{{ translate('customer_show_when_you_select_customer_level') }}"></i>
                                     </label>
-                                    <select class="js-select-2" id="customerDiscountType" data-placeholder="{{translate('select_customer')}}"
+                                    <select class="js-select-2" id="customerDiscountType"
+                                            data-placeholder="{{translate('select_customer')}}"
                                             name="customer_discount_type[]" multiple="multiple" required>
                                         <option
                                             value="{{ALL}}" {{ $discount->customer_discount_type == ALL ? 'selected' : '' }}>
@@ -217,7 +230,7 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="moduleDiscountType" class="mb-2">
-                                        {{ translate('select_category') }}
+                                        {{ translate('select_category') }} <span class="text-danger">*</span>
                                     </label>
                                     <select class="js-select-2" id="moduleDiscountType"
                                             name="module_discount_type[]" multiple="multiple" required>
@@ -237,7 +250,7 @@
                             <div class="col-sm-12">
                                 <div class="mb-4">
                                     <label for="zoneDiscountType" class="mb-2">
-                                        {{ translate('Select Zone') }}
+                                        {{ translate('Select Zone') }} <span class="text-danger">*</span>
                                     </label>
                                     <select class="js-select-2" id="zoneDiscountType"
                                             name="zone_discount_type[]"

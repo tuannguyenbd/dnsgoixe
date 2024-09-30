@@ -35,12 +35,12 @@ class WithdrawMethodService extends BaseService implements WithdrawMethodService
         $attributes = [
             'method_name' => $data['method_name'],
             'method_fields' => $method_fields,
-            'is_default' => array_key_exists('is_default',$data) && $data['is_default'] == '1' ? 1 : 0,
+            'is_default' => array_key_exists('is_default', $data) ? 1 : 0,
         ];
-        if (array_key_exists('is_default',$data) && $data['is_default'] == '1' && $default_method) {
-            $this->withdrawMethodRepository->update(id: $default_method->id,data: ['is_default' => 0]);
+        if (array_key_exists('is_default', $data) && $default_method) {
+            $this->withdrawMethodRepository->update(id: $default_method->id, data: ['is_default' => 0]);
         }
-       return $this->withdrawMethodRepository->create(data: $attributes);
+        return $this->withdrawMethodRepository->create(data: $attributes);
     }
 
     public function update(int|string $id, array $data = []): ?Model
@@ -51,24 +51,23 @@ class WithdrawMethodService extends BaseService implements WithdrawMethodService
                 'input_type' => $data['field_type'][$key],
                 'input_name' => strtolower(str_replace(' ', "_", $data['field_name'][$key])),
                 'placeholder' => $data['placeholder_text'][$key],
-                'is_required' => isset($data['is_required']) && isset($data['is_required'][$key]) ? 1:0,
+                'is_required' => isset($data['is_required']) && isset($data['is_required'][$key]) ? 1 : 0,
             ];
         }
         $attributes = [
             'method_name' => $data['method_name'],
             'method_fields' => $method_fields,
-            'is_default' => array_key_exists('is_default',$data) && $data['is_default'] == '1' ? 1 : 0,
+            'is_default' => array_key_exists('is_default', $data) ? 1 : 0,
         ];
         $withdrawalMethod = $this->withdrawMethodRepository->update(id: $id, data: $attributes);
-
-        if (array_key_exists('is_default',$data) && $data['is_default'] == '1') {
-            $this->withdrawMethodRepository->updatedBy(criteria: [['id', '!=', $withdrawalMethod?->id]],data: ['is_default' => 0]);
+        if (array_key_exists('is_default', $data)) {
+            $this->withdrawMethodRepository->updatedBy(criteria: [['id', '!=', $withdrawalMethod?->id]], data: ['is_default' => 0]);
         }
         return $withdrawalMethod;
     }
 
 
-    public function index(array $criteria = [], array $relations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = []): Collection|LengthAwarePaginator
+    public function index(array $criteria = [], array $relations = [], array $whereHasRelations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = [], array $appends = []): Collection|LengthAwarePaginator
     {
         $data = [];
         if (array_key_exists('status', $criteria) && $criteria['status'] !== 'all') {
@@ -76,12 +75,11 @@ class WithdrawMethodService extends BaseService implements WithdrawMethodService
         }
         $searchData = [];
         if (array_key_exists('search', $criteria) && $criteria['search'] != '') {
-            $searchData['fields'] = ['method_fields','method_name'];
+            $searchData['fields'] = ['method_fields', 'method_name'];
             $searchData['value'] = $criteria['search'];
         }
         $whereInCriteria = [];
         $whereBetweenCriteria = [];
-        $whereHasRelations = [];
         return $this->baseRepository->getBy(criteria: $data, searchCriteria: $searchData, whereInCriteria: $whereInCriteria, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations, relations: $relations, orderBy: $orderBy, limit: $limit, offset: $offset, withCountQuery: $withCountQuery);
     }
 

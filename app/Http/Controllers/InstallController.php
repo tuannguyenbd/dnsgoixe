@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
+use Modules\BusinessManagement\Service\Interface\BusinessSettingServiceInterface;
+use Modules\BusinessManagement\Service\Interface\FirebasePushNotificationServiceInterface;
+use Modules\BusinessManagement\Service\Interface\NotificationSettingServiceInterface;
+use Modules\PromotionManagement\Service\Interface\CouponSetupServiceInterface;
 use Modules\UserManagement\Entities\User;
 use Modules\UserManagement\Entities\UserAccount;
 use Modules\UserManagement\Entities\UserLevel;
@@ -23,6 +27,21 @@ use Ramsey\Uuid\Uuid;
 class InstallController extends Controller
 {
     use ActivationClass, UnloadedHelpers;
+
+
+    protected $businessSetting;
+    protected $notificationSettingService;
+    protected $firebasePushNotificationService;
+    protected $couponSetupService;
+
+    public function __construct(BusinessSettingServiceInterface          $businessSetting, NotificationSettingServiceInterface $notificationSettingService,
+                                FirebasePushNotificationServiceInterface $firebasePushNotificationService, CouponSetupServiceInterface $couponSetupService)
+    {
+        $this->businessSetting = $businessSetting;
+        $this->notificationSettingService = $notificationSettingService;
+        $this->firebasePushNotificationService = $firebasePushNotificationService;
+        $this->couponSetupService = $couponSetupService;
+    }
 
     public function step0(): Factory|View|Application
     {
@@ -113,7 +132,7 @@ class InstallController extends Controller
         ];
         $response = $this->dmvf($post);
 
-        return redirect($response.'?token='.bcrypt('step_3'));
+        return redirect($response . '?token=' . bcrypt('step_3'));
     }
 
     public function systemSettings(Request $request): View|Factory|RedirectResponse|Application
@@ -143,49 +162,65 @@ class InstallController extends Controller
             'user_id' => $user->id
         ]);
         $customerLevel = UserLevel::create([
-            'sequence'=>1,
-            'name'=>"Level 1",
-            'reward_type'=>"loyalty_points",
-            'reward_amount'=>10,
-            'image'=>asset('assets/images/logo.png'),
-            'targeted_ride'=>10,
-            'targeted_ride_point'=>10,
-            'targeted_amount'=>10,
-            'targeted_amount_point'=>10,
-            'targeted_cancel'=>10,
-            'targeted_cancel_point'=>10,
-            'targeted_review'=>10,
-            'targeted_review_point'=>10,
-            'user_type'=>CUSTOMER,
-            'created_at'=>now(),
-            'updated_at'=>now(),
+            'sequence' => 1,
+            'name' => "Level 1",
+            'reward_type' => "loyalty_points",
+            'reward_amount' => 10,
+            'image' => asset('assets/images/logo.png'),
+            'targeted_ride' => 10,
+            'targeted_ride_point' => 10,
+            'targeted_amount' => 10,
+            'targeted_amount_point' => 10,
+            'targeted_cancel' => 10,
+            'targeted_cancel_point' => 10,
+            'targeted_review' => 10,
+            'targeted_review_point' => 10,
+            'user_type' => CUSTOMER,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
         $driverLevel = UserLevel::create([
-            'sequence'=>1,
-            'name'=>"Level 1",
-            'reward_type'=>"loyalty_points",
-            'reward_amount'=>10,
-            'image'=>asset('assets/images/logo.png'),
-            'targeted_ride'=>10,
-            'targeted_ride_point'=>10,
-            'targeted_amount'=>10,
-            'targeted_amount_point'=>10,
-            'targeted_cancel'=>10,
-            'targeted_cancel_point'=>10,
-            'targeted_review'=>10,
-            'targeted_review_point'=>10,
-            'user_type'=>DRIVER,
-            'created_at'=>now(),
-            'updated_at'=>now(),
+            'sequence' => 1,
+            'name' => "Level 1",
+            'reward_type' => "loyalty_points",
+            'reward_amount' => 10,
+            'image' => asset('assets/images/logo.png'),
+            'targeted_ride' => 10,
+            'targeted_ride_point' => 10,
+            'targeted_amount' => 10,
+            'targeted_amount_point' => 10,
+            'targeted_cancel' => 10,
+            'targeted_cancel_point' => 10,
+            'targeted_review' => 10,
+            'targeted_review_point' => 10,
+            'user_type' => DRIVER,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
+        insertBusinessSetting(keyName: 'return_time_for_driver', settingType: PARCEL_SETTINGS, value: 24);
+        insertBusinessSetting(keyName: 'return_time_type_for_driver', settingType: PARCEL_SETTINGS, value: "hour");
+        insertBusinessSetting(keyName: 'return_fee_for_driver_time_exceed', settingType: PARCEL_SETTINGS, value: 0);
+
+        if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'parcel_returned']) == false) {
+            $this->firebasePushNotificationService->create(data: ['name' => 'parcel_returned',
+                'value' => "Parcel returned successfully",
+                'status' => 1
+            ]);
+        }
+        if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'parcel_returning_otp']) == false) {
+            $this->firebasePushNotificationService->create(data: ['name' => 'parcel_returning_otp',
+                'value' => "Your parcel returning OTP is {otp}",
+                'status' => 1
+            ]);
+        }
         $previousRouteServiceProvider = base_path('app/Providers/RouteServiceProvider.php');
         $newRouteServiceProvider = base_path('app/Providers/RouteServiceProvider.txt');
         copy($newRouteServiceProvider, $previousRouteServiceProvider);
 
-        $modules = ['AdminModule','AuthManagement','BusinessManagement','ChattingManagement','FareManagement',
-            'Gateways','ParcelManagement','PromotionManagement','ReviewModule','TransactionManagement','TripManagement',
-            'UserManagement','VehicleManagement','ZoneManagement',
+        $modules = ['AdminModule', 'AuthManagement', 'BusinessManagement', 'ChattingManagement', 'FareManagement',
+            'Gateways', 'ParcelManagement', 'PromotionManagement', 'ReviewModule', 'TransactionManagement', 'TripManagement',
+            'UserManagement', 'VehicleManagement', 'ZoneManagement',
         ];
         foreach ($modules as $module) {
             Artisan::call('module:enable', ['module' => $module]);
@@ -237,7 +272,7 @@ class InstallController extends Controller
                     PUSHER_APP_KEY=drivemond
                     PUSHER_APP_SECRET=drivemond
                     PUSHER_APP_CLUSTER=mt1
-                    PUSHER_HOST='. $url .'
+                    PUSHER_HOST=' . $url . '
                     PUSHER_PORT=6001
                     PUSHER_SCHEME="http"
 
@@ -252,7 +287,7 @@ class InstallController extends Controller
                     REVERB_APP_ID=drivemond
                     REVERB_APP_KEY=drivemond
                     REVERB_APP_SECRET=drivemond
-                    REVERB_HOST='. $url .'
+                    REVERB_HOST=' . $url . '
                     REVERB_PORT=6001
                     REVERB_SCHEME="http"
                     REVERB_SSL_CERT_PATH=""
@@ -267,7 +302,7 @@ class InstallController extends Controller
                     BUYER_USERNAME=' . session('username') . '
                     SOFTWARE_ID=MTAwMDAwMDA=
 
-                    SOFTWARE_VERSION=1.7
+                    SOFTWARE_VERSION=1.8
                     ';
             $file = fopen(base_path('.env'), 'w');
             fwrite($file, $output);
@@ -319,7 +354,7 @@ class InstallController extends Controller
             } else {
                 return false;
             }
-        }catch(\Exception $exception){
+        } catch (\Exception $exception) {
             return false;
         }
     }

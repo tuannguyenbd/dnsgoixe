@@ -20,7 +20,7 @@
                         <h5 class="text-primary fw-medium text-uppercase mb-3">{{ translate('coupon_information') }}</h5>
                         <div class="row align-items-start g-4 mb-4">
                             <div class="col-sm-6">
-                                <label for="discount_title" class="mb-2">{{ translate('coupon_title') }}
+                                <label for="discount_title" class="mb-2">{{ translate('coupon_title') }} <span class="text-danger">*</span>
                                     <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
                                         title="{{ translate('write_the_coupon_title_within_50_characters.') }}"></i>
                                 </label>
@@ -30,7 +30,7 @@
                             </div>
 
                             <div class="col-sm-6">
-                                <label for="short_desc" class="mb-2">{{ translate('short_description') }}
+                                <label for="short_desc" class="mb-2">{{ translate('short_description') }} <span class="text-danger">*</span>
                                     <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
                                         title="{{ translate('write_the_short_description_title_within_800_characters') }}"></i>
 
@@ -50,7 +50,7 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="coupon_type" class="mb-2">
-                                        {{ translate('coupon_type') }}
+                                        {{ translate('coupon_type') }} <span class="text-danger">*</span>
                                         <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
                                             title="{{ translate('when_you_choose_a_coupon_type_and_submit_it_once.') . ' ' . translate('_you_can_not_change_it_in_future') }}"></i>
                                     </label>
@@ -65,7 +65,7 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <div class="d-flex justify-content-between">
-                                        <label for="coupon_code" class="mb-2">{{ translate('coupon_code') }}
+                                        <label for="coupon_code" class="mb-2">{{ translate('coupon_code') }} <span class="text-danger">*</span>
                                             <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
                                                 title="{{ translate('type_the_coupon_code_using_either_the_"underscore"_') . "(_)" .  translate('_or_no_space_within_30_characters._') . "e.g., newyear23 or new_year_23" }}"></i>
                                         </label>
@@ -84,7 +84,7 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="limit_same_user"
-                                            class="mb-2">{{ translate('limit_for_the_same_user') }}
+                                            class="mb-2">{{ translate('limit_for_the_same_user') }} <span class="text-danger">*</span>
                                         <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
                                             title="{{ translate('set_how_many_times_a_user_can_use_this_coupon') }}"></i>
                                     </label>
@@ -96,7 +96,7 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="start_date"
-                                            class="mb-2">{{ translate('start_date') }}</label>
+                                            class="mb-2">{{ translate('start_date') }} <span class="text-danger">*</span></label>
                                     <input type="date" value="{{old('start_date')}}" id="start_date"
                                             min="{{date('Y-m-d',strtotime(now()))}}"
                                             name="start_date" class="form-control" required>
@@ -104,7 +104,7 @@
                             </div>
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
-                                    <label for="end_date" class="mb-2">{{ translate('end_date') }}</label>
+                                    <label for="end_date" class="mb-2">{{ translate('end_date') }} <span class="text-danger">*</span></label>
                                     <input type="date" id="end_date" value="{{old('end_date')}}" name="end_date"
                                             min="{{date('Y-m-d',strtotime(now()))}}"
                                             class="form-control" required>
@@ -114,7 +114,7 @@
                                 <div class="mb-4">
                                     <label for="minimum_trip_amount"
                                             class="mb-2">{{ translate('minimum_trip_amount') }}
-                                        ({{session()->get('currency_symbol') ?? '$'}})
+                                        ({{session()->get('currency_symbol') ?? '$'}}) <span class="text-danger">*</span>
                                         <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
                                             title="{{ translate('set_the_minimum_trip_amount_that_is_required_to_use_this_coupon') }}"></i>
                                     </label>
@@ -126,9 +126,8 @@
                             </div>
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
-                                    <label for="coupon_amount" class="mb-2"
-                                            id="coupon_amount_label">{{ translate('coupon_amount') }}
-                                        ({{session()->get('currency_symbol') ?? '$'}})</label>
+                                    <label for="coupon_amount" class="mb-2"><span id="coupon_amount_label">{{ translate('coupon_amount') }}
+                                        ({{session()->get('currency_symbol') ?? '$'}})</span> <span class="text-danger">*</span></label>
                                     <div class="position-relative">
                                         <input type="number" id="coupon" value="{{old('coupon')}}" name="coupon" class="form-control" placeholder="Ex: 5" step="any" required>
                                         <select class="js-select currency-type-select" id="amount_type" name="amount_type" required>
@@ -159,7 +158,7 @@
                             <div class="col-sm-6 col-xl-4 user_level">
                                 <div class="mb-4">
                                     <label for="customerLevelCouponType" class="mb-2">
-                                        {{ translate('customer_level') }}
+                                        {{ translate('customer_level') }} <span class="text-danger">*</span>
                                         <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
                                            title="{{ translate('customer_level_select_first_otherwise_customer_not_found_in_select_customer_dropdown') }}"></i>
                                     </label>
@@ -176,7 +175,7 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4 text-capitalize">
                                     <label for="customerCouponType" class="mb-2">
-                                        {{ translate('customer') }}
+                                        {{ translate('customer') }} <span class="text-danger">*</span>
                                         <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
                                            title="{{ translate('customer_show_when_you_select_customer_level') }}"></i>
                                     </label>
@@ -188,7 +187,7 @@
                             <div class="col-sm-6 col-xl-4 vehicle_category">
                                 <div class="mb-4 text-capitalize">
                                     <label for="categoryCouponType"
-                                            class="mb-2">{{ translate('category') }}
+                                            class="mb-2">{{ translate('category') }} <span class="text-danger">*</span>
                                         <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
                                             title="{{ translate('choose_in_which_vehicle_category_this_coupon_will_be_applicable.') }}"></i>
                                     </label>
@@ -206,7 +205,7 @@
                             <div class="col-sm-12">
                                 <div class="mb-4 text-capitalize">
                                     <label for="zoneDiscountType"
-                                            class="mb-2">{{ translate('Zones') }}
+                                            class="mb-2">{{ translate('Zones') }} <span class="text-danger">*</span>
                                         <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
                                             title="{{ translate('zones') }}"></i>
                                     </label>

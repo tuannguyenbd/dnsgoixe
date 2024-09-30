@@ -24,6 +24,8 @@ class ParcelFareService extends BaseService implements Interface\ParcelFareServi
         $parcelFareData = [
             "zone_id" => $data['zone_id'],
             "base_fare" => $data['base_fare'],
+            "return_fee" => $data['return_fee'],
+            "cancellation_fee" => $data['cancellation_fee'],
             "base_fare_per_km" => 0,
             "cancellation_fee_percent" => 0,
             "min_cancellation_fee" => 0,
@@ -44,6 +46,8 @@ class ParcelFareService extends BaseService implements Interface\ParcelFareServi
                             'parcel_weight_id' => $weight->id,
                             'parcel_category_id' => $category,
                             'base_fare' => $data['base_fare_' . $category] ?? 0,
+                            'return_fee' => $data['return_fee'] ?? 0,
+                            'cancellation_fee' => $data['cancellation_fee'] ?? 0,
                             'fare_per_km' => $data['weight_' . $category][$weight->id] ?? 0,
                             'zone_id' => $data['zone_id']
                         ]);

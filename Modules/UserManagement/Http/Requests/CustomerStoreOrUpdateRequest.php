@@ -31,6 +31,8 @@ class CustomerStoreOrUpdateRequest extends FormRequest
             'identification_type' => 'nullable|in:passport,driving_license,nid',
             'identification_number' => 'nullable',
             'identity_images' => 'nullable|array',
+            'existing_documents' => 'nullable|array',
+            'deleted_documents' => 'nullable|array',
             'other_documents' => 'array',
             'identity_images.*' => 'image|mimes:jpeg,jpg,png,gif|max:10000',
         ];

@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
 use Modules\BusinessManagement\Http\Requests\LandingBusinessStatisticsStoreOrUpdateRequest;
 use Modules\BusinessManagement\Http\Requests\LandingCTAStoreOrUpdateRequest;
@@ -25,6 +26,7 @@ use Modules\BusinessManagement\Service\Interface\BusinessSettingServiceInterface
 class LandingPageController extends BaseController
 {
     protected $businessSettingService;
+
     public function __construct(BusinessSettingServiceInterface $businessSettingService)
     {
         parent::__construct($businessSettingService);
@@ -42,7 +44,7 @@ class LandingPageController extends BaseController
         $attributes = ['key_name' => INTRO_SECTION, 'settings_type' => LANDING_PAGES_SETTINGS];
         $attributes1 = ['key_name' => INTRO_SECTION_IMAGE, 'settings_type' => LANDING_PAGES_SETTINGS];
         $data = $this->businessSettingService->findOneBy(criteria: $attributes);
-        $data1 = $this->businessSettingService->findOneBy(criteria:  $attributes1);
+        $data1 = $this->businessSettingService->findOneBy(criteria: $attributes1);
         return view('businessmanagement::admin.pages.intro-section', compact('data', 'data1'));
     }
 
@@ -60,7 +62,7 @@ class LandingPageController extends BaseController
         $attributes = ['key_name' => OUR_SOLUTIONS_SECTION, 'settings_type' => LANDING_PAGES_SETTINGS];
         $attributes1 = ['key_name' => OUR_SOLUTIONS_DATA, 'settings_type' => LANDING_PAGES_SETTINGS];
         $data = $this->businessSettingService->findOneBy(criteria: $attributes);
-        $ourSolutionList = $this->businessSettingService->getBy( criteria: $attributes1, limit: paginationLimit(), offset: $request->get('page', 1));
+        $ourSolutionList = $this->businessSettingService->getBy(criteria: $attributes1, limit: paginationLimit(), offset: $request->get('page', 1));
 
         return view('businessmanagement::admin.pages.our-solutions', [
             'data' => $data,
@@ -80,8 +82,8 @@ class LandingPageController extends BaseController
     {
         $this->authorize('business_edit');
         $data = $request->validated();
-        if ($request->has('id')){
-            $data = array_merge($data,[
+        if ($request->has('id')) {
+            $data = array_merge($data, [
                 'id' => $request['id']
             ]);
         }
@@ -161,8 +163,8 @@ class LandingPageController extends BaseController
     public function testimonial(Request $request)
     {
         $this->authorize('business_view');
-        $attributes = [ 'key_name' => TESTIMONIAL, 'settings_type' => LANDING_PAGES_SETTINGS];
-        $testimonials = $this->businessSettingService->getBy( criteria: $attributes, limit: paginationLimit(), offset: $request->get('page', 1));
+        $attributes = ['key_name' => TESTIMONIAL, 'settings_type' => LANDING_PAGES_SETTINGS];
+        $testimonials = $this->businessSettingService->getBy(criteria: $attributes, limit: paginationLimit(), offset: $request->get('page', 1));
         return view('businessmanagement::admin.pages.testimonial', compact('testimonials'));
     }
 
@@ -170,8 +172,8 @@ class LandingPageController extends BaseController
     {
         $this->authorize('business_edit');
         $data = $request->validated();
-        if ($request->has('id')){
-            $data = array_merge($data,[
+        if ($request->has('id')) {
+            $data = array_merge($data, [
                 'id' => $request->id
             ]);
         }
@@ -217,6 +219,24 @@ class LandingPageController extends BaseController
     {
         $this->authorize('business_edit');
         $this->businessSettingService->storeLandingPageCTA($request->validated());
+        $activationMode = externalConfig('activation_mode');
+        $martBaseUrl = externalConfig('mart_base_url');
+        if ($activationMode && $activationMode->value == 1 && $martBaseUrl && $martBaseUrl->value != null) {
+            $name = businessConfig('business_name', BUSINESS_INFORMATION)?->value ?? "DriveMond";
+            $logo = businessConfig('header_logo', BUSINESS_INFORMATION)?->value ? asset(businessConfig('header_logo', BUSINESS_INFORMATION)?->value) : asset('public/assets/admin-module/img/logo.png');
+            $cta = $this->businessSettingService->findOneBy(criteria: ['key_name' => CTA, 'settings_type' => LANDING_PAGES_SETTINGS]);
+
+            try {
+                $response = Http::post($martBaseUrl->value . '/api/v1/configurations/store', [
+                    'drivemond_business_name' => $name,
+                    'drivemond_business_logo' => $logo,
+                    'drivemond_app_url_android' => $cta?->value && $cta?->value['play_store']['user_download_link'] ? $cta?->value['play_store']['user_download_link'] : "",
+                    'drivemond_app_url_ios' => $cta?->value && $cta?->value['app_store']['user_download_link'] ? $cta?->value['app_store']['user_download_link'] : "",
+                ]);
+            } catch (\Exception $exception) {
+
+            }
+        }
         Toastr::success(LANDING_PAGE_UPDATE_200['message']);
         return back();
     }

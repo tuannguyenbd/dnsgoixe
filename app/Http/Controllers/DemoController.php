@@ -4,18 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Traits\ActivationClass;
 use App\Traits\UnloadedHelpers;
+use Brian2694\Toastr\Facades\Toastr;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Modules\BusinessManagement\Service\Interface\BusinessSettingServiceInterface;
+use Modules\BusinessManagement\Service\Interface\ExternalConfigurationServiceInterface;
 use Modules\BusinessManagement\Service\Interface\FirebasePushNotificationServiceInterface;
 use Modules\BusinessManagement\Service\Interface\NotificationSettingServiceInterface;
+use Modules\Gateways\Traits\SmsGateway;
 use Modules\PromotionManagement\Service\Interface\CouponSetupServiceInterface;
+use Modules\UserManagement\Entities\User;
+use Modules\UserManagement\Service\Interface\EmployeeRoleServiceInterface;
+use Modules\UserManagement\Service\Interface\EmployeeServiceInterface;
 
 class DemoController extends Controller
 {
     use UnloadedHelpers;
     use ActivationClass;
+    use SmsGateway;
 
     protected $businessSetting;
     protected $notificationSettingService;
@@ -30,10 +38,11 @@ class DemoController extends Controller
         $this->firebasePushNotificationService = $firebasePushNotificationService;
         $this->couponSetupService = $couponSetupService;
     }
+
     public function demo()
     {
         if (Schema::hasColumns('coupon_setups', ['user_id', 'user_level_id', 'rules'])) {
-            $couponSetups = $this->couponSetupService->getBy(withTrashed: true,);
+            $couponSetups = $this->couponSetupService->getBy(withTrashed: true);
             if (count((array)$couponSetups) > 0) {
                 foreach ($couponSetups as $couponSetup) {
                     $couponSetup->zone_coupon_type = ALL;
@@ -160,15 +169,15 @@ class DemoController extends Controller
                 'value' => 'You got a new message from {userName}',
                 'status' => 1
             ]);
-        }else{
-            $this->firebasePushNotificationService->updatedBy(criteria: ['name' => 'new_message'],data: [
+        } else {
+            $this->firebasePushNotificationService->updatedBy(criteria: ['name' => 'new_message'], data: [
                 'value' => 'You got a new message from {userName}',
                 'status' => 1
             ]);
         }
         if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'payment_successful']) == true) {
             $this->firebasePushNotificationService->updatedBy(criteria: ['name' => 'payment_successful'],
-                data:[
+                data: [
                     'value' => '{paidAmount} payment successful on this trip by {methodName}.',
                     'status' => 1
                 ]);
@@ -209,7 +218,51 @@ class DemoController extends Controller
                 'status' => 1
             ]);
         }
+        if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'someone_used_your_code']) == false) {
+            $this->firebasePushNotificationService->create(data: ['name' => 'someone_used_your_code',
+                'value' => "Your code was successfully used by a friend. You'll receive your reward after their first ride is completed.",
+                'status' => 1
+            ]);
+        }
+        if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'referral_reward_received']) == false) {
+            $this->firebasePushNotificationService->create(data: ['name' => 'referral_reward_received',
+                'value' => "You've successfully received {referralRewardAmount} reward. You can use this amount on your next ride.",
+                'status' => 1
+            ]);
+        }
+        if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'parcel_returned']) == false) {
+            $this->firebasePushNotificationService->create(data: ['name' => 'parcel_returned',
+                'value' => "Parcel returned successfully",
+                'status' => 1
+            ]);
+        }
+        if ($this->firebasePushNotificationService->findOneBy(criteria: ['name' => 'parcel_returning_otp']) == false) {
+            $this->firebasePushNotificationService->create(data: ['name' => 'parcel_returning_otp',
+                'value' => "Your parcel returning OTP is {otp}",
+                'status' => 1
+            ]);
+        }
 
         return redirect()->route("admin.dashboard");
     }
+
+    public function smsGatewayTest(Request $request)
+    {
+        try {
+            self::send("+8801740128172", "1234");
+            dd("done");
+        } catch (\Exception $exception) {
+            dd($exception->getMessage());
+        }
+    }
+
+    public function updateUnRefCodeUsers()
+    {
+        $emptyRefCodeUsers = User::withTrashed()->whereNull('ref_code')->get();
+        foreach ($emptyRefCodeUsers as $user) {
+            generateReferralCode($user);
+        }
+        return true;
+    }
+
 }

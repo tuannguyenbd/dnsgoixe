@@ -16,11 +16,11 @@ interface BaseServiceInterface
 
     public function update(string|int $id, array $data = []): ?Model;
 
-    public function updatedBy(array $criteria, array $data = [],bool $withTrashed = false);
+    public function updatedBy(array $criteria, array $data = [], bool $withTrashed = false);
 
     public function findOne(string|int $id, array $withAvgRelations = [], array $relations = [], array $withCountQuery = [], bool $withTrashed = false, bool $onlyTrashed = false): ?Model;
 
-    public function findOneBy(array $criteria = [], array $whereInCriteria = [],array $withAvgRelations = [], array $relations = [], array $withCountQuery = [], array $orderBy =[], bool $withTrashed = false, bool $onlyTrashed = false): ?Model;
+    public function findOneBy(array $criteria = [], array $whereInCriteria = [], array $withAvgRelations = [], array $relations = [], array $withCountQuery = [], array $orderBy = [], bool $withTrashed = false, bool $onlyTrashed = false): ?Model;
 
     public function delete(string|int $id): bool;
 
@@ -33,7 +33,7 @@ interface BaseServiceInterface
     public function restoreData(string|int $id): Mixed;
 
     //custom
-    public function index(array $criteria = [], array $relations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = []): Collection|LengthAwarePaginator;
+    public function index(array $criteria = [], array $relations = [], array $whereHasRelations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = [], array $appends = []): Collection|LengthAwarePaginator;
 
     public function statusChange(string|int $id, array $data): ?Model;
 

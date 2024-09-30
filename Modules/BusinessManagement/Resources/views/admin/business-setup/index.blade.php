@@ -46,7 +46,7 @@
                                                             {{ translate('Your maintenance mode is activated from') }}
                                                             <strong
                                                                 class="text-body">{{ $startDate->format('m/d/Y, h:i A') }}</strong>
-                                                            to
+                                                            {{translate("to")}}
                                                             <strong
                                                                 class="text-body">{{ $endDate->format('m/d/Y, h:i A') }}</strong>
                                                             .

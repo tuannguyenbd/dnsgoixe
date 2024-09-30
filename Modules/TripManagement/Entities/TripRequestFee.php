@@ -12,6 +12,7 @@ class TripRequestFee extends Model
     protected $fillable = [
         'trip_request_id',
         'cancellation_fee',
+        'return_fee',
         'cancelled_by',
         'waiting_fee',
         'waited_by',
@@ -27,6 +28,7 @@ class TripRequestFee extends Model
 
     protected $casts = [
         'cancellation_fee' => 'float',
+        'return_fee' => 'float',
         'waiting_fee' => 'float',
         'idle_fee' => 'float',
         'delay_fee' => 'float',

@@ -163,7 +163,7 @@ trait CommonTrait
     }
 
 
-    public function estimatedFare($tripRequest, $routes, $zone_id, $tripFare = null, $area_id = null): mixed
+    public function estimatedFare($tripRequest, $routes, $zone_id, $tripFare = null, $area_id = null,$beforeCreate = false): mixed
     {
         if ($tripRequest['type'] == 'parcel') {
             abort_if(boolean: empty($tripFare), code: 403, message: translate('invalid_or_missing_information'));
@@ -171,8 +171,10 @@ trait CommonTrait
 
             $distance_wise_fare = $tripFare->fares[0]->fare_per_km * $routes[0]['distance'];
             $est_fare = $tripFare->fares[0]->base_fare + $distance_wise_fare;
+            $returnFee = ($est_fare*$tripFare->fares[0]->return_fee)/100;
+            $cancellationFee = ($est_fare*$tripFare->fares[0]->cancellation_fee)/100;
             $user = auth('api')->user();
-            $discount = $this->getEstimatedDiscount(user: $user,zoneId: $zone_id, tripType: $tripRequest['type'], vehicleCategoryId: null,estimatedAmount: $est_fare);
+            $discount = $this->getEstimatedDiscount(user: $user,zoneId: $zone_id, tripType: $tripRequest['type'], vehicleCategoryId: null,estimatedAmount: $est_fare,beforeCreate:$beforeCreate);
             $vat_percent = (double)get_cache('vat_percent') ?? 1;
             $discountEstFare = $est_fare-($discount?$discount['discount_amount']:0);
             $coupon = $this->getEstimatedCouponDiscount(user: $user,zoneId: $zone_id, tripType: $tripRequest['type'], vehicleCategoryId:null,estimatedAmount:$discountEstFare);
@@ -195,12 +197,14 @@ trait CommonTrait
                 'discount_amount' => round(($discount?$discount['discount_amount']:0), $points),
                 'coupon_applicable' => $coupon,
                 'request type' => $tripRequest['type'],
-                'encoded_polyline' => $routes[0]['encoded_polyline']
+                'encoded_polyline' => $routes[0]['encoded_polyline'],
+                'return_fee' => $returnFee,
+                'cancellation_fee' => $cancellationFee
             ];
 
         } else {
 
-            $estimated_fare = $tripFare->map(function ($trip) use ($routes, $tripRequest, $area_id) {
+            $estimated_fare = $tripFare->map(function ($trip) use ($routes, $tripRequest, $area_id,$beforeCreate) {
                 foreach ($routes as $route) {
                     if ($route['drive_mode'] === 'DRIVE') {
                         $distance = $route['distance'];
@@ -219,7 +223,7 @@ trait CommonTrait
                 $points = (int)getSession('currency_decimal_point') ?? 0;
                 $est_fare = $trip->vehicleCategory->type === 'car' ? round(($trip->base_fare + $drive_fare), $points) : round(($trip->base_fare + $bike_fare), $points);
                 $user = auth('api')->user();
-                $discount = $this->getEstimatedDiscount(user: $user,zoneId: $trip->zone_id, tripType: $tripRequest['type'], vehicleCategoryId: $trip->vehicleCategory->id,estimatedAmount: $est_fare);
+                $discount = $this->getEstimatedDiscount(user: $user,zoneId: $trip->zone_id, tripType: $tripRequest['type'], vehicleCategoryId: $trip->vehicleCategory->id,estimatedAmount: $est_fare,beforeCreate:$beforeCreate);
                 $vat_percent = (double)get_cache('vat_percent') ?? 1;
                 $discountEstFare = $est_fare-($discount?$discount['discount_amount']:0);
                 $coupon = $this->getEstimatedCouponDiscount(user: $user,zoneId: $trip->zone_id, tripType: $tripRequest['type'],vehicleCategoryId:$trip->vehicleCategory->id,estimatedAmount:$discountEstFare);
@@ -245,6 +249,7 @@ trait CommonTrait
                     'coupon_applicable' => $coupon,
                     'request_type' => $tripRequest['type'],
                     'encoded_polyline' => $trip->VehicleCategory->type === 'car' ? $drive_polyline : $bike_polyline,
+                    'return_fee' => 0
                 ];
 
             });

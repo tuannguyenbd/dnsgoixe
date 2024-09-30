@@ -43,7 +43,7 @@
                                 <div class="col-md-6">
                                     <div class="d-flex gap-2 align-items-center mb-3">
                                         <input type="checkbox"
-                                               id="makeMethodDefault" {{$method['is_default'] ? 'checked' : ''}}>
+                                               id="makeMethodDefault" {{$method['is_default'] ? 'checked' : ''}} name="is_default">
                                         <label for="makeMethodDefault">
                                             {{translate("Make This Method Default")}}
                                         </label>

@@ -134,8 +134,8 @@ class CustomerRepository implements CustomerInterface
                 foreach ($attributes['identity_images'] as $image) {
                     $identityImages[] = fileUploader('customer/identity/', 'png', $image);
                 }
-            }else{
-                $identityImages =  $customer->identification_image;
+            } else {
+                $identityImages = $customer->identification_image;
             }
             $otherDocuments = [];
             if (array_key_exists('other_documents', $attributes)) {
@@ -169,6 +169,8 @@ class CustomerRepository implements CustomerInterface
             if (array_key_exists('increase', $attributes)) {
                 $customer->loyalty_points += $attributes['increase'];
             }
+            $customer->save();
+            $customer->full_name = $customer->first_name . ' ' . $customer->last_name;
             $customer->save();
 
             // Customer Address

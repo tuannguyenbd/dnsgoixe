@@ -20,7 +20,7 @@ class CustomerLevelService extends BaseService implements CustomerLevelServiceIn
         $this->customerLevelRepository = $customerLevelRepository;
     }
 
-    public function index(array $criteria = [], array $relations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = []): Collection|LengthAwarePaginator
+    public function index(array $criteria = [], array $relations = [], array $whereHasRelations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = [], array $appends = []): Collection|LengthAwarePaginator
     {
         $data = [];
         if (array_key_exists('status', $criteria) && $criteria['status'] !== 'all') {

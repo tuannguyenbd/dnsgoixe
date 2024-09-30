@@ -22,6 +22,8 @@ class TripStatus extends Model
         'ongoing',
         'completed',
         'cancelled',
+        'returning',
+        'returned',
         'failed',
         'note',
         'created_at',

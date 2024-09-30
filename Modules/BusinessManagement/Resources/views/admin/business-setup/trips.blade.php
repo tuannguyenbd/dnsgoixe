@@ -1,6 +1,6 @@
 @extends('adminmodule::layouts.master')
 
-@section('title', translate('Business_Info'))
+@section('title', translate('Trip Settings'))
 
 @section('content')
 
@@ -14,7 +14,7 @@
                 </div>
             </div>
             <div class="card mb-3 text-capitalize">
-                <form action="{{route('admin.business.setup.trip-fare.store')}}?type=trip_settings" id="trips_form"
+                <form action="{{route('admin.business.setup.trip-fare.store')."?type=".TRIP_SETTINGS}}" id="trips_form"
                       method="POST">
                     @csrf
 
@@ -237,16 +237,13 @@
         {{ $cancellationReasons->links() }}
     </div>
 
-    {{--    @foreach($cancellationReasons as $key => $cancellationReason)--}}
     <div class="modal fade" id="editDataModal">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <!-- End Main Content -->
-                {{--                @include('businessmanagement::admin.business-setup.edit-cancellation-reason')--}}
             </div>
         </div>
     </div>
-    {{--    @endforeach--}}
 @endsection
 
 @push('script')

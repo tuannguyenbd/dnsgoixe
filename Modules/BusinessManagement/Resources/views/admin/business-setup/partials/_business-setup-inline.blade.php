@@ -23,4 +23,12 @@
         <a href="{{route('admin.business.setup.info.settings')}}"
            class="nav-link {{Request::is('admin/business/setup/info/settings') ? 'active' : ''}}">{{translate('settings')}}</a>
     </li>
+    <li class="nav-item">
+        <a href="{{route('admin.business.setup.parcel.index')}}"
+           class="nav-link {{Request::is('admin/business/setup/parcel') ? 'active' : ''}}">{{translate('parcel')}}</a>
+    </li>
+    <li class="nav-item">
+        <a href="{{route('admin.business.setup.referral-earning.index')}}"
+           class="nav-link {{Request::is('admin/business/setup/referral-earning') ? 'active' : ''}}">{{translate('referral_earning')}}</a>
+    </li>
 </ul>

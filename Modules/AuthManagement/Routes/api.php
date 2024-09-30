@@ -16,6 +16,8 @@ Route::controller(\Modules\AuthManagement\Http\Controllers\Api\New\AuthControlle
             Route::post('otp-verification', 'otpVerification');
             //send otp for otp login or reset
             Route::post('send-otp', 'sendOtp');
+            Route::post('external-registration', 'customerRegistrationFromMart');
+            Route::post('external-login', 'customerLoginFromMart');
 
         });
     });

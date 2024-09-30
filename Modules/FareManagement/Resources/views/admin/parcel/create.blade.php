@@ -38,8 +38,8 @@
                             @endforelse
                         </div>
 
-                        <div class="row gy-4 parcel-fare-setup-class">
-                            <div class="col-sm-6 col-lg-4">
+                        <div class="row gy-4">
+                            <div class="col-sm-4 col-lg-4 category-fare-class">
                                 <label for="base_fare" class="form-label">{{ translate('Base_Fare') }}</label>
                                 <div class="input-group_tooltip">
                                     <input type="number" class="form-control" name="base_fare" id="base_fare"
@@ -47,6 +47,26 @@
                                            placeholder="{{ translate('Base_Fare')}}" step=".01" min="0.01" max="99999999" required>
                                     <i class="bi bi-info-circle-fill text-primary tooltip-icon" data-bs-toggle="tooltip"
                                        data-bs-title="{{ translate('set_the_base_fare_for_calling_a_vehicle_for_parcel_delivery')}}"></i>
+                                </div>
+                            </div>
+                            <div class="col-sm-4 col-lg-4 parcel-fare-setup-class">
+                                <label for="return_fee" class="form-label">{{ translate('return_fee') }} (%)</label>
+                                <div class="input-group_tooltip">
+                                    <input type="number" class="form-control" name="return_fee" id="return_fee"
+                                           value="{{($fares?->return_fee) + 0}}"
+                                           placeholder="{{ translate('return_fee')}}" step=".01" min="0" max="100" required>
+                                    <i class="bi bi-info-circle-fill text-primary tooltip-icon" data-bs-toggle="tooltip"
+                                       data-bs-title="{{ translate('Set the Return Fee for the customer when customer need to return the parcel. This fee will added in the total trip cost.')}}"></i>
+                                </div>
+                            </div>
+                            <div class="col-sm-4 col-lg-4 parcel-fare-setup-class">
+                                <label for="return_fee" class="form-label">{{ translate('cancellation_fee') }} (%)</label>
+                                <div class="input-group_tooltip">
+                                    <input type="number" class="form-control" name="cancellation_fee" id="cancellation_fee"
+                                           value="{{($fares?->cancellation_fee) + 0}}"
+                                           placeholder="{{ translate('return_fee')}}" step=".01" min="0" max="100" required>
+                                    <i class="bi bi-info-circle-fill text-primary tooltip-icon" data-bs-toggle="tooltip"
+                                       data-bs-title="{{ translate('Set the Cancellation Fee for the driver when he cancel a parcel delivery trip. This fee will be calculated as a percentage of  total trip cost.')}}"></i>
                                 </div>
                             </div>
                         </div>
@@ -96,7 +116,7 @@
                                                 @forelse($parcelWeight as $pw)
                                                     @php($weightFare =$fares?->fares->where('parcel_weight_id', $pw->id)->where('parcel_category_id', $pc->id)->first())
                                                     @if($pw->is_active ==1)
-                                                        <td class="{{$pc->id}} {{$fare?->parcel_category_id == $pc->id ? '' : 'd-none'}}">
+                                                        <td class="category-fare-class {{$pc->id}} {{$fare?->parcel_category_id == $pc->id ? '' : 'd-none'}}">
                                                             <input type="number" name="weight_{{$pc->id}}[{{$pw->id}}]"
                                                                    class="form-control {{$pc->id}}"
                                                                    value="{{$weightFare?->fare_per_km + 0}}" step=".01" min="0.01" max="99999999"
@@ -144,7 +164,7 @@
             input.addEventListener('input', function () {
                 if (parseFloat(this.value) < 0) {
                     // this.value = 1;
-                    toastr.error('{{translate('the_value_must_greater_than_0')}}')
+                    toastr.error('{{translate('the_value_must_greater_than_or_equal_0')}}')
                 }
             });
         });
@@ -153,7 +173,7 @@
 
         inputCategoryElements.forEach(input => {
             input.addEventListener('input', function () {
-                if (parseFloat(this.value) < 0) {
+                if (parseFloat(this.value) <= 0) {
                     // this.value = 1;
                     toastr.error('{{translate('the_value_must_greater_than_0')}}')
                 }

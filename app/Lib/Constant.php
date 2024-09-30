@@ -7,13 +7,20 @@ const DV_DELETE_TRIP_CURRENT_STATUS = ['accepted','ongoing'];
 const PENDING='pending';
 const ACCEPTED='accepted';
 const ONGOING='ongoing';
+const CANCELLED='cancelled';
+const COMPLETED='completed';
+const RETURNING='returning';
+const RETURNED='returned';
 const APPROVED='approved';
 const DENIED='denied';
 const SETTLED='settled';
-const CANCELLED='cancelled';
-const COMPLETED='completed';
 const PAID='paid';
 const UNPAID='unpaid';
+const PARTIAL_PAID='partial_paid';
+const DUE='due';
+
+const SENDER= 'sender';
+const RECEIVER= 'receiver';
 
 const RUNNING = 'running';
 const CURRENTLY_OFF = 'currently_off';
@@ -2899,6 +2906,35 @@ const CUSTOMER_ACCEPT_RIDE_CANCELLATION_REASON = [
 ];
 
 const CUSTOMER_ONGOING_RIDE_CANCELLATION_REASON = [
+    "Selected wrong location",
+    "Driver is taking long time to reach pickup point",
+    "Waiting time is high",
+    "Driver want extra fare",
+    "Driver asked me to cancel"
+];
+const DRIVER_ACCEPT_PARCEL_CANCELLATION_REASON = [
+    "Vehicle problem",
+    "Customer didn't arrived at pickup point",
+    "Couldn't reach to the customer for heavy jam",
+    "Customer asked to cancel",
+    "Couldn't find or contact customer"
+];
+const DRIVER_ONGOING_PARCEL_CANCELLATION_REASON = [
+    "Vehicle problem",
+    "Customer didn't arrived at pickup point",
+    "Couldn't reach to the customer for heavy jam",
+    "Customer asked to cancel",
+    "Couldn't find or contact customer"
+];
+const CUSTOMER_ACCEPT_PARCEL_CANCELLATION_REASON = [
+    "Selected wrong location",
+    "Driver is taking long time to reach pickup point",
+    "Waiting time is high",
+    "Driver want extra fare",
+    "Driver asked me to cancel"
+];
+
+const CUSTOMER_ONGOING_PARCEL_CANCELLATION_REASON = [
     "Selected wrong location",
     "Driver is taking long time to reach pickup point",
     "Waiting time is high",

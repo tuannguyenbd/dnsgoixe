@@ -50,7 +50,7 @@ class BannerSetupService extends BaseService implements Interface\BannerSetupSer
             'start_date'=>$data['start_date'] ?? null,
             'end_date'=>$data['end_date'] ?? null,
         ];
-        if (array_key_exists('brand_logo', $data)) {
+        if (array_key_exists('banner_image', $data)) {
             $updateData = array_merge($updateData,[
                 'image'=>fileUploader('promotion/banner/', 'png', $data['banner_image'], $model->image),
             ]);

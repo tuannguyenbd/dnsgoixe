@@ -21,12 +21,19 @@ class DriverTransactionController extends Controller
 
     public function list(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'limit' => 'required|integer',
+            'offset' => 'required|integer',
+        ]);
+        if ($validator->fails()) {
 
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
+        }
         $criteria = ['user_id' => auth()->user()->id];
         if (!is_null($request->type)) {
             $criteria['account'] = $request->type;
         }
-        $data = $this->transactionService->getBy(criteria: $criteria, relations: ['user'], limit: $request->limit, offset: $request->offset,orderBy:['updated_at'=>'desc']);
+        $data = $this->transactionService->getBy(criteria: $criteria, relations: ['user'], limit: $request->limit, offset: $request->offset, orderBy: ['updated_at' => 'desc']);
         $transactions = TransactionResource::collection($data);
 
         return response()->json(responseFormatter(constant: DEFAULT_200, content: $transactions, limit: $request->limit, offset: $request->offset));
@@ -44,14 +51,57 @@ class DriverTransactionController extends Controller
         }
         $criteria = [
             'user_id' => auth()->user()->id,
-            'attribute' => 'admin_cash_collect',
+            ['attribute', '!=', 'admin_cash_collect'],
             'account' => 'payable_balance',
         ];
-        $data = $this->transactionService->getBy(criteria: $criteria, relations: ['user'], limit: $request->limit, offset: $request->offset,orderBy:['updated_at'=>'desc']);
+        $data = $this->transactionService->getBy(criteria: $criteria, relations: ['user'], orderBy: ['updated_at' => 'desc'], limit: $request->limit, offset: $request->offset);
         $transactions = TransactionResource::collection($data);
 
         return response()->json(responseFormatter(constant: DEFAULT_200, content: $transactions, limit: $request->limit, offset: $request->offset));
     }
+
+    public function cashCollectTransactionHistory(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'limit' => 'required|integer',
+            'offset' => 'required|integer',
+        ]);
+        if ($validator->fails()) {
+
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
+        }
+        $criteria = [
+            'user_id' => auth()->user()->id,
+            'attribute' => 'admin_cash_collect',
+            'account' => 'payable_balance',
+        ];
+        $data = $this->transactionService->getBy(criteria: $criteria, relations: ['user'], orderBy: ['updated_at' => 'desc'], limit: $request->limit, offset: $request->offset);
+        $transactions = TransactionResource::collection($data);
+
+        return response()->json(responseFormatter(constant: DEFAULT_200, content: $transactions, limit: $request->limit, offset: $request->offset));
+    }
+
+    public function referralEarningHistory(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'limit' => 'required|integer',
+            'offset' => 'required|integer',
+        ]);
+        if ($validator->fails()) {
+
+            return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
+        }
+        $criteria = [
+            'user_id' => auth()->user()->id,
+            'attribute' => 'referral_earning',
+            'account' => 'receivable_balance',
+        ];
+        $data = $this->transactionService->getBy(criteria: $criteria, relations: ['user'], limit: $request->limit, offset: $request->offset, orderBy: ['updated_at' => 'desc']);
+        $transactions = TransactionResource::collection($data);
+
+        return response()->json(responseFormatter(constant: DEFAULT_200, content: $transactions, limit: $request->limit, offset: $request->offset));
+    }
+
     public function walletTransactionHistory(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -66,7 +116,7 @@ class DriverTransactionController extends Controller
             'user_id' => auth()->user()->id,
             'attribute' => 'level_reward',
         ];
-        $data = $this->transactionService->getBy(criteria: $criteria, relations: ['user'], limit: $request->limit, offset: $request->offset,orderBy:['updated_at'=>'desc']);
+        $data = $this->transactionService->getBy(criteria: $criteria, relations: ['user'], limit: $request->limit, offset: $request->offset, orderBy: ['updated_at' => 'desc']);
         $transactions = TransactionResource::collection($data);
 
         return response()->json(responseFormatter(constant: DEFAULT_200, content: $transactions, limit: $request->limit, offset: $request->offset));

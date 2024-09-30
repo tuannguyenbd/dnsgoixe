@@ -4,6 +4,7 @@ namespace Modules\BusinessManagement\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class TripFareSettingStoreOrUpdateRequest extends FormRequest
 {
@@ -16,10 +17,18 @@ class TripFareSettingStoreOrUpdateRequest extends FormRequest
     {
         return [
             'type' => 'required',
-            'idle_fee' => 'required_if:type,trip_fare_settings|gt:0',
-            'delay_fee' => 'required_if:type,trip_fare_settings|gt:0',
-            'add_intermediate_points' => 'required_if:type,trip_settings|boolean',
-            'trip_request_active_time' => 'required_if:type,trip_settings|gt:0|lte:30',
+            'idle_fee' => [Rule::requiredIf(function () {
+                return $this->input('type') === TRIP_FARE_SETTINGS;
+            }), 'gt:0'],
+            'delay_fee' => [Rule::requiredIf(function () {
+                return $this->input('type') === TRIP_FARE_SETTINGS;
+            }), 'gt:0'],
+            'add_intermediate_points' => [Rule::requiredIf(function () {
+                return $this->input('type') === TRIP_SETTINGS;
+            }), 'boolean'],
+            'trip_request_active_time' => [Rule::requiredIf(function () {
+                return $this->input('type') === TRIP_SETTINGS;
+            }), 'gt:0', 'lte:30'],
             'trip_push_notification' => 'sometimes',
             'bidding_push_notification' => 'sometimes',
         ];

@@ -55,6 +55,22 @@ class DashboardController extends BaseController
         $zones = $this->zoneService->getBy(criteria: [
             'is_active' => 1
         ]);
+
+        $totalTripsEarningCriteria = [
+            'type' => RIDE_REQUEST,
+            'payment_status' => PAID
+        ];
+        $totalParcelsEarningCriteria = [
+            'type' => PARCEL,
+            'payment_status' => PAID
+        ];
+        $whereHasRelations = [];
+
+        // Add criteria for the `fee` relationship to filter by `cancelled_by` being either `null` or `CUSTOMER`
+        $whereHasRelations['fee'] = function ($query) {
+            $query->whereNull('cancelled_by')
+                ->orWhere('cancelled_by', '=', 'CUSTOMER'); // Handle `null` or `CUSTOMER`
+        };
         $transactions = $this->transactionService->getBy(criteria: ['user_id' => \auth()->user()->id], orderBy: ['created_at' => 'desc'])->take(7);
         $superAdmin = $this->employeeService->findOneBy(criteria: ['user_type' => 'super-admin']);
         $superAdminAccount = $this->userAccountService->findOneBy(criteria: ['user_id' => $superAdmin?->id]);
@@ -62,9 +78,15 @@ class DashboardController extends BaseController
         $drivers = $this->driverService->getBy(criteria: ['user_type' => DRIVER, 'is_active' => true])->count();
         $totalCouponAmountGiven = $this->tripRequestService->getBy(criteria: ['payment_status' => PAID])->SUM('coupon_amount');
         $totalDiscountAmountGiven = $this->tripRequestService->getBy(criteria: ['payment_status' => PAID])->SUM('discount_amount');
-        $totalTrips = $this->tripRequestService->getAll()->count();
+        $totalTrips = $this->tripRequestService->getBy(criteria: ['type' => RIDE_REQUEST])->count();
+        $totalParcels = $this->tripRequestService->getBy(criteria: ['type' => PARCEL])->count();
+        $totalEarning = $this->tripRequestService->getBy(criteria: ['payment_status' => PAID], whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
+        $totalTripsEarning = $this->tripRequestService->getBy(criteria: $totalTripsEarningCriteria, whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
+        $totalParcelsEarning = $this->tripRequestService->getBy(criteria: $totalParcelsEarningCriteria, whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
+
+
         return view('adminmodule::dashboard', compact('zones', 'transactions', 'superAdminAccount', 'customers',
-            'drivers', 'totalDiscountAmountGiven','totalCouponAmountGiven','totalTrips'));
+            'drivers', 'totalDiscountAmountGiven', 'totalCouponAmountGiven', 'totalTrips', 'totalParcels', 'totalEarning', 'totalTripsEarning', 'totalParcelsEarning'));
     }
 
     public function recentTripActivity()

@@ -35,7 +35,7 @@ class DriverController extends Controller
 
     public function profileInfo(Request $request): JsonResponse
     {
-        if (strcmp($request->user()->user_type, DRIVER_USER_TYPES) == 0) {
+        if ($request->user()->user_type == DRIVER) {
 
             $relations = [
                 'level', 'vehicle', 'vehicle.brand', 'vehicle.model', 'vehicle.category', 'driverDetails', 'userAccount', 'latestTrack'];
@@ -170,5 +170,20 @@ class DriverController extends Controller
         $incomeStatements = TripRequestResource::collection($incomeStatements);
 
         return response()->json(responseFormatter(constant: DEFAULT_200, content: $incomeStatements, limit: $request->limit, offset: $request->offset));
+    }
+
+    public function referralDetails(Request $request): JsonResponse
+    {
+        if ($request->user()->user_type == DRIVER) {
+            $useCodeEarning = referralEarningSetting('use_code_earning', DRIVER)?->value;
+            $data = [
+                'referral_code' => auth()->user()->ref_code,
+                'share_code_earning' => (double)referralEarningSetting('share_code_earning', DRIVER)?->value,
+                'use_code_earning' => (double)referralEarningSetting('use_code_earning', DRIVER)?->value,
+            ];
+            return response()->json(responseFormatter(DEFAULT_200, $data), 200);
+
+        }
+        return response()->json(responseFormatter(DEFAULT_401), 401);
     }
 }

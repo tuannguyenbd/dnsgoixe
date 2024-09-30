@@ -24,7 +24,7 @@ class VehicleApiStoreUpdateRequest extends FormRequest
             'transmission' => 'sometimes',
             'parcel_weight_capacity' => 'sometimes',
             'fuel_type' => Rule::requiredIf(empty($id)),
-            'upload_documents' => Rule::requiredIf(empty($id)),
+            'other_documents' => Rule::requiredIf(empty($id)),
         ];
     }
 

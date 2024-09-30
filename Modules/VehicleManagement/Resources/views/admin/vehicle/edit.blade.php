@@ -25,11 +25,10 @@
                                 <div class="row align-items-end">
                                     <div class="col-sm-6 col-xl-4">
                                         <div class="mb-4 text-capitalize">
-                                            <label for="vehicle_brand"
+                                            <label for="brand_id"
                                                    class="mb-2">{{ translate('vehicle_brand') }} <span
                                                     class="text-danger">*</span></label>
-                                            <select class="js-select-ajax theme-input-style" id="vehicle_brand" name="brand_id"
-                                                    id="brand-id"
+                                            <select class="js-select-ajax" name="brand_id" id="brand_id"
                                                     onchange="ajax_models('{{url('/')}}/admin/vehicle/attribute-setup/model/ajax-models/'+this.value)"
                                                     required>
                                                 @if(isset($vehicle->brand))
@@ -41,16 +40,17 @@
                                     </div>
                                     <div class="col-sm-6 col-xl-4">
                                         <div class="mb-4" id="model-selector">
-                                            <label for="vehicle_model" class="mb-2">{{ translate('vehicle_model') }}
+                                            <label for="model_id" class="mb-2">{{ translate('vehicle_model') }}
                                                 <span class="text-danger">*</span></label>
-                                            <select class="js-select-ajax theme-input-style w-100" name="model_id"
-                                                id="model_id"
-                                                data-placeholder="{{ translate('please_select_vehicle_model') }}"
-                                                required>
+                                            <select class="js-select-ajax theme-input-style w-100 form-control"
+                                                    name="model_id"
+                                                    id="model_id"
+                                                    data-placeholder="{{ translate('please_select_vehicle_model') }}"
+                                                    required>
                                                 @if(isset($vehicle->model))
-                                                <option value="{{$vehicle->model->id}}"
-                                                        selected="selected">{{$vehicle->model->name}}</option>
-                                            @endif
+                                                    <option value="{{$vehicle->model->id}}"
+                                                            selected="selected">{{$vehicle->model->name}}</option>
+                                                @endif
                                             </select>
                                         </div>
                                     </div>
@@ -87,7 +87,8 @@
                                                    class="mb-2">{{ translate('licence_expire_date') }} <span
                                                     class="text-danger">*</span></label>
                                             <input type="date" id="licence_expire_date" name="licence_expire_date"
-                                                   value="{{ $vehicle->licence_expire_date->format('Y-m-d') }}" class="form-control"
+                                                   value="{{ $vehicle->licence_expire_date->format('Y-m-d') }}"
+                                                   class="form-control"
                                                    required>
                                         </div>
                                     </div>
@@ -95,16 +96,16 @@
                                         <div class="mb-4">
                                             <label for="vin_number"
                                                    class="mb-2">{{ strtoupper(translate('vin')) }} {{ translate('number') }}
-                                                </label>
+                                            </label>
                                             <input type="text" id="vin_number" class="form-control" name="vin_number"
                                                    value="{{ $vehicle->vin_number }}"
-                                                   placeholder="Ex: 1HGBH41JXMN109186" >
+                                                   placeholder="Ex: 1HGBH41JXMN109186">
                                         </div>
                                     </div>
                                     <div class="col-sm-6 col-xl-4">
                                         <div class="mb-4">
                                             <label for="transmission" class="mb-2">{{ translate('transmission') }}
-                                                </label>
+                                            </label>
                                             <input type="text" id="transmission" class="form-control"
                                                    value="{{ $vehicle->transmission }}" name="transmission"
                                                    placeholder="Ex: AMT">
@@ -112,10 +113,15 @@
                                     </div>
                                     <div class="col-sm-6 col-xl-4">
                                         <div class="mb-4">
-                                            <label for="parcel_weight_capacity" class="mb-2">{{ translate('parcel_weight_capacity') }} ({{translate("Kg")}})
+                                            <label for="parcel_weight_capacity"
+                                                   class="mb-2">{{ translate('parcel_weight_capacity') }}
+                                                ({{translate("Kg")}})
                                             </label>
-                                            <input type="number" maxlength="999999999" value="{{ $vehicle?->parcel_weight_capacity ?? "" }}" id="parcel_weight_capacity"
-                                                   class="form-control" name="parcel_weight_capacity" placeholder="Ex: 10">
+                                            <input type="number" maxlength="999999999"
+                                                   value="{{ $vehicle?->parcel_weight_capacity ?? "" }}"
+                                                   id="parcel_weight_capacity"
+                                                   class="form-control" name="parcel_weight_capacity"
+                                                   placeholder="Ex: 10">
                                         </div>
                                     </div>
                                     <div class="col-sm-6 col-xl-4">
@@ -172,20 +178,27 @@
                         <div class="card mt-3">
                             <div class="card-body">
                                 <h5 class="mb-4 text-capitalize">{{ translate('upload_documents') }}</h5>
-
                                 <div class="d-flex flex-wrap gap-3">
+                                    <!-- Display Existing Documents -->
                                     @if (!empty($vehicle->documents))
                                         @foreach ($vehicle->documents as $document)
-                                            <div class="file__value">
-                                                <div class="file__value--text">{{ $document }}</div>
-                                                <div class="file__value--remove" data-id="{{ $document }}"></div>
+                                            <div class='show-image'>
+                                                <div class="file__value" data-document="{{ $document }}">
+                                                    <div class="file__value--text">{{ $document }}</div>
+                                                    <div class="file__value--remove" data-id="{{ $document }}">
+                                                    </div>
+                                                    <input type="hidden" name="existing_documents[]"
+                                                           value="{{ $document }}">
+                                                </div>
                                             </div>
                                         @endforeach
                                     @endif
-
+                                    <div class="d-flex flex-wrap gap-3" id="selected-files-container"></div>
+                                    <div id="input-data"></div>
+                                    <!-- Upload New Documents -->
                                     <div class="upload-file file__input" id="file__input">
                                         <input type="file" class="upload-file__input2" multiple="multiple"
-                                               name="upload_documents[]">
+                                        >
                                         <div class="upload-file__img2">
                                             <div class="upload-box rounded media gap-4 align-items-center p-4 px-lg-5">
                                                 <i class="bi bi-cloud-arrow-up-fill fs-20"></i>
@@ -197,6 +210,11 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- Hidden input to track deleted documents -->
+                                {{--                                <input type="hidden" id="deleted_documents" name="deleted_documents" value="">--}}
+
+
                             </div>
                         </div>
                     </div>
@@ -212,13 +230,31 @@
 @endsection
 
 @push('script')
+    <script src="{{ asset('public/assets/admin-module/js/vehicle-management/vehicle/create.js') }}"></script>
 
     <script>
         "use strict";
-        // ajax_get('{{url('/')}}/admin/vehicle/attribute-setup/model/ajax-models-child/{{$vehicle->brand_id}}?model_id={{$vehicle->model_id}}', 'model-selector')
+        "use strict";
+
+        function ajax_models(route) {
+            $.get({
+                url: route,
+                dataType: 'json',
+                data: {},
+                beforeSend: function () {
+                },
+                success: function (response) {
+                    $('#model-selector').html(response.template);
+                },
+                complete: function () {
+
+                },
+            });
+        }
+
         $('#brand_id').select2({
             ajax: {
-                url: '{{ route('admin.vehicle.attribute-setup.brand.all-brands',parameters: ['status'=>'active']) }}',
+                url: '{{ route('admin.vehicle.attribute-setup.brand.all-brands', parameters: ['status' => 'active']) }}',
                 data: function (params) {
                     return {
                         q: params.term, // search term
@@ -240,52 +276,38 @@
             }
         });
 
-
-        function ajax_models(route) {
-            $.get({
-                url: route,
-                dataType: 'json',
-                data: {},
-                beforeSend: function () {
-                },
-                success: function (response) {
-                    $('#model-selector').html(response.template);
-
-                },
-                complete: function () {
-                },
-            });
-        }
-
-        $('.js-select-ajax').select2({
-            ajax: {
-                url: '{{ route('admin.vehicle.attribute-setup.brand.all-brands') }}',
-                data: function (params) {
-                    return {
-                        q: params.term, // search term
-                        page: params.page
-                    };
-                },
-                processResults: function (data) {
-                    return {
-                        results: data
-                    };
-                },
-                __port: function (params, success, failure) {
-                    var $request = $.ajax(params);
-                    $request.then(success);
-                    $request.fail(failure);
-                    return $request;
-                }
-            }
-        });
-
         $('#vehicle_category').select2({
             ajax: {
-                url: '{{ route('admin.vehicle.attribute-setup.category.all-categories') }}',
+                url: '{{ route('admin.vehicle.attribute-setup.category.all-categories', parameters: ['status' => 'active']) }}',
                 data: function (params) {
                     return {
                         q: params.term, // search term
+                        page: params.page
+                    };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data
+                    };
+                },
+                __port: function (params, success, failure) {
+                    let $request = $.ajax(params);
+                    $request.then(success);
+                    $request.fail(failure);
+                    return $request;
+                }
+            }
+        });
+
+        let all_driver = 0;
+
+        $('.js-select-driver').select2({
+            ajax: {
+                url: '{{ route('admin.driver.get-all-ajax-vehicle') }}',
+                data: function (params) {
+                    return {
+                        search: params.term, // search term
+                        all_driver: all_driver,
                         page: params.page
                     };
                 },
@@ -303,5 +325,51 @@
                 }
             }
         });
+
+        {{--$('.js-select-ajax').select2({--}}
+        {{--    ajax: {--}}
+        {{--        url: '{{ route('admin.vehicle.attribute-setup.brand.all-brands') }}',--}}
+        {{--        data: function (params) {--}}
+        {{--            return {--}}
+        {{--                q: params.term, // search term--}}
+        {{--                page: params.page--}}
+        {{--            };--}}
+        {{--        },--}}
+        {{--        processResults: function (data) {--}}
+        {{--            return {--}}
+        {{--                results: data--}}
+        {{--            };--}}
+        {{--        },--}}
+        {{--        __port: function (params, success, failure) {--}}
+        {{--            var $request = $.ajax(params);--}}
+        {{--            $request.then(success);--}}
+        {{--            $request.fail(failure);--}}
+        {{--            return $request;--}}
+        {{--        }--}}
+        {{--    }--}}
+        {{--});--}}
+
+
+
+        // delete
+        // function removeDocument(documentName) {
+        //     // Remove the document visually
+        //     const documentElement = document.querySelector(`[data-document="${documentName}"]`);
+        //     if (documentElement) {
+        //         documentElement.remove();
+        //     }
+        //
+        //     // Add the document to the deleted list
+        //     let deletedDocuments = document.getElementById('deleted_documents').value;
+        //     if (deletedDocuments) {
+        //         deletedDocuments = deletedDocuments.split(',');
+        //     } else {
+        //         deletedDocuments = [];
+        //     }
+        //
+        //     deletedDocuments.push(documentName);
+        //     document.getElementById('deleted_documents').value = deletedDocuments.join(',');
+        // }
+
     </script>
 @endpush

@@ -19,6 +19,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.'], function () {
         Route::controller(LoginController::class)->group(function () {
             Route::get('login', 'loginView')->name('login');
             Route::post('login', 'login');
+            Route::post('external-login-from-mart', 'externalLoginFromMart');
             Route::get('logout', 'logout')->name('logout');
         });
     });

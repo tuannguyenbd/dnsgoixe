@@ -37,45 +37,34 @@
                             <div class="w-100 border-bottom pt-3"></div>
                         </div>
                         <div class="card-body">
-                            <div class="d-flex flex-wrap align-items-center justify-content-center gap-4">
-                                <div class="flex-grow-1">
-                                    <table
-                                        class="table table-borderless align-middle table-hover text-nowrap trip-table">
-                                        <thead class="table-light align-middle text-capitalize">
-                                        <tr>
-                                            <th>{{translate("Source")}}</th>
-                                            <th class="text-end">{{translate("Expense")}}</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex flex-wrap align-items-center gap-1">
-                                                    <span class="pt-1 pb-2 px-2 rounded-1 bg-warning"></span>
-                                                    <span>{{translate("Parcel")}}</span>
-                                                </div>
-                                            </td>
-                                            <td class="text-end">{{getSession('currency_symbol')}}<span id="parcelExpense"></span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex flex-wrap align-items-center gap-1">
-                                                    <span class="pt-1 pb-2 px-2 rounded-1 bg-info"></span>
-                                                    <span>{{translate("Ride Request")}}</span>
-                                                </div>
-                                            </td>
-                                            <td class="text-end">{{getSession('currency_symbol')}}<span id="rideExpense"></span></td>
-                                        </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div>
+                            <div class="">
+                                <div class="d-flex justify-content-center">
                                     <div class="position-relative pie-chart">
                                         <div class="pie-placeholder"></div>
                                         <div id="dognut-pie" class="pie-chart-inner"></div>
                                         <div class="total--orders">
                                             <h4 class="text-uppercase mb-xxl-2">{{getSession('currency_symbol')}}<span id="totalExpense"></span></h4>
                                             <span class="text-capitalize">{{translate("Expenses")}}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <div class="expense-info bg-F6F6F6">
+                                        <div class="icon bg-info">
+                                            <img src="{{asset('public/assets/admin-module/img/svg/ride-sharing.svg')}}" alt="">
+                                        </div>
+                                        <div class="w-0 flex-grow-1">
+                                            <span>{{translate("Ride Request")}}</span>
+                                            <h5 class="m-0">{{getSession('currency_symbol')}}<span id="rideExpense"></span></h5>
+                                        </div>
+                                    </div>
+                                    <div class="expense-info bg-F6F6F6">
+                                        <div class="icon bg-warning">
+                                            <img src="{{asset('public/assets/admin-module/img/svg/parcel.svg')}}" alt="">
+                                        </div>
+                                        <div class="w-0 flex-grow-1">
+                                            <span>{{translate("Parcel")}}</span>
+                                            <h5 class="m-0">{{getSession('currency_symbol')}}<span id="parcelExpense"></span></h5>
                                         </div>
                                     </div>
                                 </div>
@@ -265,7 +254,7 @@
                         }
                     ],
                     chart: {
-                        height: 366,
+                        height: 330,
                         type: 'line',
                         dropShadow: {
                             enabled: true,
@@ -380,7 +369,7 @@
                 options = {
                     series: [parcelExpense, rideExpense],
                     chart: {
-                        width: 200,
+                        width: 240,
                         type: 'donut',
                     },
                     labels: ['{{ translate('Parcel') }}', '{{ translate('Ride Request') }}'],
@@ -401,6 +390,9 @@
                     colors: ['#FFA84A', '#0177CD'],
                     fill: {
                         colors: ['#FFA84A', '#0177CD']
+                    },
+                    stroke:{
+                        colors: ['#FFA84A00', '#0177CD00']
                     },
                     legend: {
                         show: false

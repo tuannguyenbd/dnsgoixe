@@ -2,6 +2,7 @@
 
 namespace Modules\TripManagement\Lib;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Modules\PromotionManagement\Entities\DiscountSetup;
 use Modules\PromotionManagement\Service\Interface\DiscountSetupServiceInterface;
@@ -10,7 +11,7 @@ use Modules\TripManagement\Service\Interface\TripRequestServiceInterface;
 trait DiscountCalculationTrait
 {
 
-    public function getEstimatedDiscount($user,$zoneId, $tripType, $vehicleCategoryId,$estimatedAmount)
+    public function getEstimatedDiscount($user, $zoneId, $tripType, $vehicleCategoryId, $estimatedAmount, $beforeCreate = false)
     {
         $discountSetupService = app(DiscountSetupServiceInterface::class);
         $tripRequestService = app(TripRequestServiceInterface::class);
@@ -25,6 +26,7 @@ trait DiscountCalculationTrait
             'fare' => $tripAmountWithoutVatTaxAndTips
         ];
         $userTripApplicableDiscounts = $discountSetupService->getUserTripApplicableDiscountList(tripType: $tripType, vehicleCategoryId: $vehicleCategoryId, data: $criteria);
+        $adminDiscount = null;
         if ($userTripApplicableDiscounts->isNotEmpty()) {
             $discounts = [];
             foreach ($userTripApplicableDiscounts as $userTripApplicableDiscount) {
@@ -44,15 +46,58 @@ trait DiscountCalculationTrait
             }
             if (count($discounts) > 0) {
                 $discountsCollection = collect($discounts);
-                return $discountsCollection->sortByDesc('discount_amount')->first();
+                $adminDiscount = $discountsCollection->sortByDesc('discount_amount')->first();
             }
         }
+        $referralDiscountAmount = 0;
+        $totalTrips = $beforeCreate ? (count($user->customerTrips) + 1) : count($user->customerTrips);
+        if (referralEarningSetting('referral_earning_status', CUSTOMER)?->value &&
+            $user?->referralCustomerDetails && $user?->referralCustomerDetails?->is_used == 0 && $totalTrips == 1
+            && $user?->referralCustomerDetails->customer_discount_amount > 0) {
+            if ($user?->referralCustomerDetails?->customer_discount_validity == null || $user?->referralCustomerDetails?->customer_discount_validity == 0 || $user?->referralCustomerDetails->customer_discount_validity_type == null) {
+                $referralDiscountAmount = $this->getReferralCustomerDiscountAmount($user, $tripAmountWithoutVatTaxAndTips);
+            }
+            if ($user?->referralCustomerDetails->customer_discount_validity > 0 && $user?->referralCustomerDetails->customer_discount_validity_type != null) {
+                $validityTime = Carbon::create($user->created_at);
+                if ($user?->referralCustomerDetails->customer_discount_validity_type === 'hour') {
+                    $validityTime = $validityTime->addHours((int)$user?->referralCustomerDetails->customer_discount_validity);
+                } else {
+                    $validityTime = $validityTime->addDays((int)$user?->referralCustomerDetails->customer_discount_validity);
+                }
+                if ($validityTime >= Carbon::now()) {
+                    $referralDiscountAmount = $this->getReferralCustomerDiscountAmount($user, $tripAmountWithoutVatTaxAndTips);
+                }
+            }
+        }
+
+        if ($adminDiscount && $referralDiscountAmount) {
+            if ($adminDiscount['discount_amount'] > $referralDiscountAmount) {
+                return $adminDiscount;
+            }
+            return collect([
+                'discount' => null,
+                'discount_id' => null,
+                'discount_amount' => $referralDiscountAmount
+            ]);
+        }
+        if ($adminDiscount) {
+            return $adminDiscount;
+        }
+        if ($referralDiscountAmount) {
+            return collect([
+                'discount' => null,
+                'discount_id' => null,
+                'discount_amount' => $referralDiscountAmount
+            ]);
+        }
+
         return collect([
             'discount' => null,
             'discount_id' => null,
             'discount_amount' => 0
         ]);
     }
+
     public function getFinalDiscount($user, $trip)
     {
         $discountSetupService = app(DiscountSetupServiceInterface::class);
@@ -68,7 +113,7 @@ trait DiscountCalculationTrait
             'fare' => $tripAmountWithoutVatTaxAndTips
         ];
         $userTripApplicableDiscounts = $discountSetupService->getUserTripApplicableDiscountList(tripType: $trip->type, vehicleCategoryId: $trip->vehicle_category_id, data: $criteria);
-
+        $adminDiscount = null;
         if ($userTripApplicableDiscounts->isNotEmpty()) {
             $discounts = [];
             foreach ($userTripApplicableDiscounts as $userTripApplicableDiscount) {
@@ -88,8 +133,47 @@ trait DiscountCalculationTrait
             }
             if (count($discounts) > 0) {
                 $discountsCollection = collect($discounts);
-                return $discountsCollection->sortByDesc('discount_amount')->first();
+                $adminDiscount = $discountsCollection->sortByDesc('discount_amount')->first();
             }
+        }
+        $referralDiscountAmount = 0;
+        if (referralEarningSetting('referral_earning_status', CUSTOMER)?->value &&
+            $user?->referralCustomerDetails && $user?->referralCustomerDetails?->is_used == 0 && count($user->customerTrips) == 1
+            && ($user?->referralCustomerDetails->customer_discount_amount > 0)) {
+            if ($user?->referralCustomerDetails->customer_discount_validity == 0 && $user?->referralCustomerDetails->customer_discount_validity_type == null) {
+                $referralDiscountAmount = $this->getReferralCustomerDiscountAmount($user, $tripAmountWithoutVatTaxAndTips);
+            }
+            if ($user?->referralCustomerDetails->customer_discount_validity > 0 && $user?->referralCustomerDetails->customer_discount_validity_type != null) {
+                $validityTime = Carbon::create($user->created_at);
+                if ($user?->referralCustomerDetails->customer_discount_validity_type === 'hour') {
+                    $validityTime = $validityTime->addHours((int)$user?->referralCustomerDetails->customer_discount_validity);
+                } else {
+                    $validityTime = $validityTime->addDays((int)$user?->referralCustomerDetails->customer_discount_validity);
+                }
+                if ($validityTime >= Carbon::now()) {
+                    $referralDiscountAmount = $this->getReferralCustomerDiscountAmount($user, $tripAmountWithoutVatTaxAndTips);
+                }
+            }
+        }
+        if ($adminDiscount && $referralDiscountAmount) {
+            if ($adminDiscount['discount_amount'] > $referralDiscountAmount) {
+                return $adminDiscount;
+            }
+            return collect([
+                'discount' => null,
+                'discount_id' => null,
+                'discount_amount' => $referralDiscountAmount
+            ]);
+        }
+        if ($adminDiscount) {
+            return $adminDiscount;
+        }
+        if ($referralDiscountAmount) {
+            return collect([
+                'discount' => null,
+                'discount_id' => null,
+                'discount_amount' => $referralDiscountAmount
+            ]);
         }
         return collect([
             'discount' => null,
@@ -113,6 +197,19 @@ trait DiscountCalculationTrait
             return round(min($discount->discount_amount, $amount), 2);
         }
         return round($discount->discount_amount);
+    }
+
+    private function getReferralCustomerDiscountAmount($user, $tripAmountWithoutVatTaxAndTips)
+    {
+        if ($user?->referralCustomerDetails?->customer_discount_amount_type == PERCENTAGE) {
+            $discountAmount = ($user?->referralCustomerDetails?->customer_discount_amount * $tripAmountWithoutVatTaxAndTips) / 100;
+            return round($discountAmount, 2);
+        }
+        $amount = $tripAmountWithoutVatTaxAndTips;
+        if ($user?->referralCustomerDetails?->customer_discount_amount > $amount) {
+            return round(min($user?->referralCustomerDetails?->customer_discount_amount, $amount), 2);
+        }
+        return round((double)$user?->referralCustomerDetails?->customer_discount_amount);
     }
 
     public function updateDiscountCount($discountId, $amount)

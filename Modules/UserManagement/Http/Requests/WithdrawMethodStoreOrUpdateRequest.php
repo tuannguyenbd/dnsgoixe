@@ -20,7 +20,7 @@ class WithdrawMethodStoreOrUpdateRequest extends FormRequest
             'field_name' => 'required|array',
             'placeholder_text' => 'required|array',
             'is_required' => 'nullable',
-            'is_default' => 'in:0,1',
+            'is_default' => 'nullable',
         ];
     }
 

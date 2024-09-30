@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 use Modules\BusinessManagement\Service\Interface\BusinessSettingServiceInterface;
 use Modules\BusinessManagement\Service\Interface\CancellationReasonServiceInterface;
+use Modules\BusinessManagement\Service\Interface\ParcelCancellationReasonServiceInterface;
 use Modules\BusinessManagement\Service\Interface\SettingServiceInterface;
 use Modules\TripManagement\Service\Interface\TripRequestServiceInterface;
 use Modules\UserManagement\Service\Interface\UserLastLocationServiceInterface;
@@ -22,17 +23,20 @@ class ConfigController extends Controller
     protected $businessSettingService;
     protected $settingService;
     protected $cancellationReasonService;
+    protected $parcelCancellationReasonService;
     protected $zoneService;
     protected $userLastLocationService;
     protected $tripRequestService;
 
     public function __construct(BusinessSettingServiceInterface    $businessSettingService, SettingServiceInterface $settingService,
-                                CancellationReasonServiceInterface $cancellationReasonService, ZoneServiceInterface $zoneService,
-                                UserLastLocationServiceInterface   $userLastLocationService, TripRequestServiceInterface $tripRequestService)
+                                CancellationReasonServiceInterface $cancellationReasonService, ParcelCancellationReasonServiceInterface $parcelCancellationReasonService,
+                                ZoneServiceInterface               $zoneService, UserLastLocationServiceInterface $userLastLocationService,
+                                TripRequestServiceInterface        $tripRequestService)
     {
         $this->businessSettingService = $businessSettingService;
         $this->settingService = $settingService;
         $this->cancellationReasonService = $cancellationReasonService;
+        $this->parcelCancellationReasonService = $parcelCancellationReasonService;
         $this->zoneService = $zoneService;
         $this->userLastLocationService = $userLastLocationService;
         $this->tripRequestService = $tripRequestService;
@@ -96,7 +100,11 @@ class ConfigController extends Controller
             'facebook_login' => (bool)$info->firstWhere('key_name', 'facebook_login')?->value['status'] ?? 0,
             'google_login' => (bool)$info->firstWhere('key_name', 'google_login')?->value['status'] ?? 0,
             'self_registration' => (bool)$info->firstWhere('key_name', 'driver_self_registration')?->value ?? 0,
-
+            'referral_earning_status' => referralEarningSetting('referral_earning_status', DRIVER)?->value ? true : false,
+            'parcel_return_time_fee_status' => (bool)businessConfig('parcel_return_time_fee_status', PARCEL_SETTINGS)?->value ?? false,
+            'return_time_for_driver' => (int)businessConfig('return_time_for_driver', PARCEL_SETTINGS)?->value ?? 0,
+            'return_time_type_for_driver' => businessConfig('return_time_type_for_driver', PARCEL_SETTINGS)?->value ?? "day",
+            'return_fee_for_driver_time_exceed' => (double)businessConfig('return_fee_for_driver_time_exceed', PARCEL_SETTINGS)?->value ?? 0,
         ];
 
         return response()->json($configs);
@@ -116,7 +124,18 @@ class ConfigController extends Controller
             'ongoing_ride' => $ongoingRide,
             'accepted_ride' => $acceptedRide,
         ];
-        return response(responseFormatter(DEFAULT_200, [$data]));
+        return response(responseFormatter(DEFAULT_200, $data));
+    }
+
+    public function parcelCancellationReasonList()
+    {
+        $ongoingRide = $this->parcelCancellationReasonService->getBy(criteria: ['cancellation_type' => 'ongoing_ride', 'user_type' => 'driver', 'is_active' => 1])->pluck('title')->toArray();
+        $acceptedRide = $this->parcelCancellationReasonService->getBy(criteria: ['cancellation_type' => 'accepted_ride', 'user_type' => 'driver', 'is_active' => 1])->pluck('title')->toArray();
+        $data = [
+            'ongoing_ride' => $ongoingRide,
+            'accepted_ride' => $acceptedRide,
+        ];
+        return response(responseFormatter(DEFAULT_200, $data));
     }
 
 
@@ -220,7 +239,7 @@ class ConfigController extends Controller
         if ($validator->fails()) {
             return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
         }
-        $trip = $this->tripRequestService->findOne(id:  $request->trip_request_id, relations: [ 'coordinate', 'vehicleCategory']);
+        $trip = $this->tripRequestService->findOne(id: $request->trip_request_id, relations: ['coordinate', 'vehicleCategory']);
         if (!$trip) {
 
             return response()->json(responseFormatter(constant: TRIP_REQUEST_404, errors: errorProcessor($validator)), 403);
@@ -237,9 +256,8 @@ class ConfigController extends Controller
                 $trip->coordinate->destination_coordinates->latitude,
                 $trip->coordinate->destination_coordinates->longitude,
             ];
-            $intermediateCoordinates = $trip->coordinate->intermediate_coordinates ? json_decode($$trip->coordinate->intermediate_coordinates, true) : [] ;
-        }
-        else {
+            $intermediateCoordinates = $trip->coordinate->intermediate_coordinates ? json_decode($$trip->coordinate->intermediate_coordinates, true) : [];
+        } else {
             $destinationCoordinates = [
                 $trip->coordinate->pickup_coordinates->latitude,
                 $trip->coordinate->pickup_coordinates->longitude,
@@ -249,25 +267,23 @@ class ConfigController extends Controller
         $drivingMode = auth()->user()->vehicleCategory->category->type == 'motor_bike' ? 'TWO_WHEELER' : 'DRIVE';
 
         $getRoutes = getRoutes(
-            originCoordinates:$pickupCoordinates,
-            destinationCoordinates:$destinationCoordinates,
-            intermediateCoordinates:$intermediateCoordinates,
+            originCoordinates: $pickupCoordinates,
+            destinationCoordinates: $destinationCoordinates,
+            intermediateCoordinates: $intermediateCoordinates,
         ); //["DRIVE", "TWO_WHEELER"]
 
         $result = [];
         foreach ($getRoutes as $route) {
             if ($route['drive_mode'] == $drivingMode) {
                 if ($trip->current_status == 'completed' || $trip->current_status == 'cancelled') {
-                    $result['is_dropped'] =  true;
-                }
-                else {
-                    $result['is_dropped'] =  false;
+                    $result['is_dropped'] = true;
+                } else {
+                    $result['is_dropped'] = false;
                 }
                 if ($trip->current_status === PENDING || $trip->current_status === ACCEPTED) {
-                    $result['is_picked'] =  false;
-                }
-                else {
-                    $result['is_picked'] =  true;
+                    $result['is_picked'] = false;
+                } else {
+                    $result['is_picked'] = true;
                 }
                 return [array_merge($result, $route)];
             }

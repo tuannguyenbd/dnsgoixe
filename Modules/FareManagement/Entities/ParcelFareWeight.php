@@ -18,6 +18,8 @@ class ParcelFareWeight extends Model
         'parcel_weight_id',
         'parcel_category_id',
         'base_fare',
+        'return_fee',
+        'cancellation_fee',
         'fare_per_km',
         'zone_id',
         'created_at',

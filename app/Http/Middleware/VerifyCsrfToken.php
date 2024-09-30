@@ -12,6 +12,8 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        //
+        '/admin/auth/external-login-from-mart',
+        '/api/customer/update-customer-data',
+        '/api/store-configurations',
     ];
 }

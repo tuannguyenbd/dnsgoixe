@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Modules\BusinessManagement\Repository\BusinessSettingRepositoryInterface;
+use Modules\BusinessManagement\Repository\ExternalConfigurationRepositoryInterface;
 use Modules\BusinessManagement\Repository\NotificationSettingRepositoryInterface;
 use Modules\BusinessManagement\Service\Interface\BusinessSettingServiceInterface;
 use Modules\UserManagement\Repository\UserRepositoryInterface;
@@ -18,14 +19,16 @@ class BusinessSettingService extends BaseService implements BusinessSettingServi
     protected $businessSettingRepository;
     protected $userRepository;
     protected $notificationSettingRepository;
+    protected $externalConfigurationRepository;
 
     public function __construct(BusinessSettingRepositoryInterface     $businessSettingRepository, UserRepositoryInterface $userRepository,
-                                NotificationSettingRepositoryInterface $notificationSettingRepository)
+                                NotificationSettingRepositoryInterface $notificationSettingRepository, ExternalConfigurationRepositoryInterface $externalConfigurationRepository)
     {
         parent::__construct($businessSettingRepository);
         $this->businessSettingRepository = $businessSettingRepository;
         $this->userRepository = $userRepository;
         $this->notificationSettingRepository = $notificationSettingRepository;
+        $this->externalConfigurationRepository = $externalConfigurationRepository;
     }
 
     public function storeBusinessInfo(array $data)
@@ -102,6 +105,8 @@ class BusinessSettingService extends BaseService implements BusinessSettingServi
                 }
             }
         }
+
+        #TODO
     }
 
     public function updateSetting(array $data)
@@ -294,7 +299,7 @@ class BusinessSettingService extends BaseService implements BusinessSettingServi
 
     public function storeTripFareSetting(array $data)
     {
-        if ($data['type'] == 'trip_settings') {
+        if ($data['type'] == TRIP_SETTINGS) {
             if (!array_key_exists('bidding_push_notification', $data)) {
                 $data['bidding_push_notification'] = 0;
             }
@@ -313,6 +318,38 @@ class BusinessSettingService extends BaseService implements BusinessSettingServi
                     ->create(data: ['key_name' => $key, 'settings_type' => TRIP_SETTINGS, 'value' => $value]);
             }
             Cache::put($key, $value);
+        }
+    }
+
+    public function storeParcelSetting(array $data)
+    {
+        if (array_key_exists('parcel_return_time_fee_status', $data)) {
+            $parcelReturnTimeFeeStatus = 1;
+        } else {
+            $parcelReturnTimeFeeStatus = 0;
+        }
+        $driverSetting = $this->businessSettingRepository
+            ->findOneBy(criteria: ['key_name' => 'parcel_return_time_fee_status', 'settings_type' => PARCEL_SETTINGS]);
+        if ($driverSetting) {
+            $this->businessSettingRepository
+                ->update(id: $driverSetting->id, data: ['key_name' => 'parcel_return_time_fee_status', 'settings_type' => PARCEL_SETTINGS, 'value' => $parcelReturnTimeFeeStatus]);
+        } else {
+            $this->businessSettingRepository
+                ->create(data: ['key_name' => 'parcel_return_time_fee_status', 'settings_type' => PARCEL_SETTINGS, 'value' => $parcelReturnTimeFeeStatus]);
+        }
+        foreach ($data as $key => $value) {
+            if ($key != 'parcel_return_time_fee_status') {
+                $driverSetting = $this->businessSettingRepository
+                    ->findOneBy(criteria: ['key_name' => $key, 'settings_type' => PARCEL_SETTINGS]);
+                if ($driverSetting) {
+                    $this->businessSettingRepository
+                        ->update(id: $driverSetting->id, data: ['key_name' => $key, 'settings_type' => PARCEL_SETTINGS, 'value' => $value]);
+                } else {
+                    $this->businessSettingRepository
+                        ->create(data: ['key_name' => $key, 'settings_type' => PARCEL_SETTINGS, 'value' => $value]);
+                }
+                Cache::put($key, $value);
+            }
         }
     }
 

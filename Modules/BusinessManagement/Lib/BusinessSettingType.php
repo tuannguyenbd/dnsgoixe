@@ -30,6 +30,7 @@ const PAYMENT_CONFIG = "payment_config";
 const SOCIAL_LOGIN = "social_login";
 
 const TRIP_SETTINGS = "trip_settings";
+const PARCEL_SETTINGS = "parcel_settings";
 const TRIP_FARE_SETTINGS = "trip_fare_settings";
 
 const RECAPTCHA = "recaptcha";

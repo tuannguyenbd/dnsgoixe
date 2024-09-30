@@ -115,6 +115,8 @@ class TripRequestRepository implements TripRequestInterfaces
             $trip->area_id = $attributes['area_id'] ?? null;
             $trip->actual_fare = $attributes['actual_fare'];
             $trip->estimated_fare = $attributes['estimated_fare'] ?? 0;
+            $trip->return_fee = $attributes['return_fee'] ?? 0;
+            $trip->cancellation_fee = $attributes['cancellation_fee'] ?? 0;
             $trip->rise_request_count = $attributes['rise_request_count'] ?? 0;
             $trip->estimated_distance = str_replace(',', '', $attributes['estimated_distance']) ?? null;
             $trip->payment_method = $attributes['payment_method'] ?? null;
@@ -413,10 +415,10 @@ class TripRequestRepository implements TripRequestInterfaces
                 ->when($attributes['whereNotNull'] ?? null, fn($query) => $query->whereNotNull($attributes['whereNotNull']))
                 ->where(function ($query) {
                     $query->where(function ($query1) {
-                        $query1->where('current_status', 'completed')
+                        $query1->where('current_status', COMPLETED)
                             ->where('payment_status', UNPAID);
                     })->orWhere(function ($query) {
-                        $query->whereIn('current_status', [PENDING, ACCEPTED, ONGOING]);
+                        $query->whereIn('current_status', [PENDING, ACCEPTED, ONGOING, RETURNING]);
                     });
                 })
                 ->paginate(perPage: $attributes['limit'], page: $attributes['offset']);
@@ -427,7 +429,7 @@ class TripRequestRepository implements TripRequestInterfaces
                 'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo'])
             ->where(['type' => 'parcel', $attributes['column'] => $attributes['value']])
             ->when($attributes['whereNotNull'] ?? null, fn($query) => $query->whereNotNull($attributes['whereNotNull']))
-            ->whereNotIn('current_status', ['cancelled', 'completed'])
+            ->whereNotIn('current_status', [CANCELLED, COMPLETED, RETURNED])
             ->paginate(perPage: $attributes['limit'], page: $attributes['offset']);
 
     }

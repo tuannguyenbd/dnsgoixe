@@ -15,6 +15,8 @@ class ParcelFareStoreOrUpdateRequest extends FormRequest
         return [
             'parcel_category' => 'required|array',
             'base_fare' => 'required|gt:0',
+            'return_fee' => 'required|gte:0',
+            'cancellation_fee' => 'required|gte:0',
         ];
     }
 

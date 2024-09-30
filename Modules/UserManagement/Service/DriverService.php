@@ -32,7 +32,7 @@ class DriverService extends BaseService implements Interface\DriverServiceInterf
         $this->userLevelRepository = $userLevelRepository;
     }
 
-    public function index(array $criteria = [], array $relations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = []): Collection|LengthAwarePaginator
+    public function index(array $criteria = [], array $relations = [], array $whereHasRelations = [], array $orderBy = [], int $limit = null, int $offset = null, array $withCountQuery = [], array $appends = []): Collection|LengthAwarePaginator
     {
         $data = [];
         if (array_key_exists('status', $criteria) && $criteria['status'] !== 'all') {
@@ -75,6 +75,7 @@ class DriverService extends BaseService implements Interface\DriverServiceInterf
             'other_documents' => $otherDocuments ?? null,
             'identification_image' => $identityImages ?? null,
             'is_active' => 1,
+            'ref_code' => generateReferralCode(),
         ]);
         DB::beginTransaction();
 
@@ -90,7 +91,6 @@ class DriverService extends BaseService implements Interface\DriverServiceInterf
         }
         $driver?->driverDetails()->create($driverDetailsData);
         $driver?->userAccount()->create();
-
         DB::commit();
         return $driver;
     }
@@ -123,17 +123,14 @@ class DriverService extends BaseService implements Interface\DriverServiceInterf
             }
         }
 
-//        if ($driver?->identification_image != null || count($driver?->identification_image) > 0) {
-//            $oldIdentityImages = $driver?->identification_image;
+//        $otherDocuments = [];
+//        if (array_key_exists('other_documents', $data)) {
+//            foreach ($data['other_documents'] as $image) {
+//                $otherDocuments[] = fileUploader('driver/document/', $image->getClientOriginalExtension(), $image);
+//            }
+//        } else {
+//            $otherDocuments = $driver?->other_documents;
 //        }
-        $otherDocuments = [];
-        if (array_key_exists('other_documents', $data)) {
-            foreach ($data['other_documents'] as $image) {
-                $otherDocuments[] = fileUploader('driver/document/', $image->getClientOriginalExtension(), $image);
-            }
-        } else {
-            $otherDocuments = $driver?->other_documents;
-        }
         if (array_key_exists('profile_image', $data)) {
             $profile_image = fileUploader('driver/profile/', 'png', $data['profile_image'], $driver?->profile_image);
         }
@@ -150,12 +147,23 @@ class DriverService extends BaseService implements Interface\DriverServiceInterf
             'full_name' => $data['first_name'] . " " . $data['last_name'],
             'loyalty_points' => array_key_exists('decrease', $data) ? $driver->loyalty_points -= $data['decrease'] : (array_key_exists('increase', $data) ? $driver->loyalty_points += $data['increase'] : 0),
             'profile_image' => $profile_image ?? $driver?->profile_image,
-            'other_documents' => $otherDocuments,
             'identification_image' => $identityImages,
             'old_identification_image' => $oldIdentityImages,
             'is_active' => $driver?->is_active ?? 1,
         ]);
+        $existingDocuments = array_key_exists('existing_documents', $data) ? $data['existing_documents'] : [];
+        $deletedDocuments = array_key_exists('deleted_documents', $data) ? explode(',', $data['deleted_documents']) : [];
 
+        // Remove deleted documents from the existing list
+        $documents = array_diff($existingDocuments, $deletedDocuments);
+        // Handle new uploads
+        if ($data['other_documents'] ?? null) {
+            foreach ($data['other_documents'] as $doc) {
+                $extension = $doc->getClientOriginalExtension();
+                $documents[] = fileUploader('driver/document/', $extension, $doc);
+            }
+        }
+        $driverData['other_documents'] = $documents;
         DB::beginTransaction();
         $driver = $this->userRepository->update(id: $id, data: $driverData);
 
@@ -196,7 +204,7 @@ class DriverService extends BaseService implements Interface\DriverServiceInterf
             'collectable_amount' => $driver?->userAccount->payable_balance > $driver?->userAccount->receivable_balance ? ($driver?->userAccount->payable_balance - $driver?->userAccount->receivable_balance) : 0,
             'pending_withdraw' => $driver?->userAccount->pending_balance,
             'already_withdrawn' => $driver?->userAccount->total_withdrawn,
-            'withdrawable_amount' => $driver?->userAccount->receivable_balance> $driver?->userAccount->payable_balance ? ($driver?->userAccount->receivable_balance- $driver?->userAccount->payable_balance) : 0,
+            'withdrawable_amount' => $driver?->userAccount->receivable_balance > $driver?->userAccount->payable_balance ? ($driver?->userAccount->receivable_balance - $driver?->userAccount->payable_balance) : 0,
             'total_earning' => $driver?->userAccount->received_balance,
             'idle_rate_today' => $driverRateInfoData['idleRateToday'],
             'avg_active_day' => $driverRateInfoData['avgActiveRateByDay'],

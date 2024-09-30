@@ -130,6 +130,46 @@
                     </div>
 
                 </div>
+{{--                <div class="col-lg-6">--}}
+{{--                    <div class="card">--}}
+{{--                        <form>--}}
+{{--                            <div class="card-header">--}}
+{{--                                <h5 class="d-flex align-items-center gap-2 text-capitalize">--}}
+{{--                                    <i class="bi bi-person-fill-gear"></i>--}}
+{{--                                    {{translate('Driver Parcel Delivery Limit')}}--}}
+{{--                                    <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"--}}
+{{--                                       title="{{translate('Driver Parcel Delivery Limit')}}"></i>--}}
+{{--                                </h5>--}}
+{{--                            </div>--}}
+{{--                            <div class="card-body">--}}
+{{--                                <div class="mb-4">--}}
+{{--                                    <div class="d-flex align-items-center justify-content-between gap-2">--}}
+{{--                                        <h6 class="fw-medium text-capitalize text-capitalize">{{translate('Driver Has parcel Delivery Limit')}}</h6>--}}
+{{--                                        <label class="switcher">--}}
+{{--                                            <input class="switcher_input" type="checkbox">--}}
+{{--                                            <span class="switcher_control"></span>--}}
+{{--                                        </label>--}}
+{{--                                    </div>--}}
+{{--                                </div>--}}
+
+{{--                                <div class="mb-3">--}}
+{{--                                    <label class="mb-2">{{translate('Limit')}}</label>--}}
+{{--                                    <input type="tel" name="loyalty_points[value]" --}}
+{{--                                           class="form-control" required pattern="[1-9][0-9]{0,200}"--}}
+{{--                                           title="Please input integer value. Ex:1,2,22,10"--}}
+{{--                                           placeholder="{{translate('Ex: 2')}}"--}}
+{{--                                           value="">--}}
+{{--                                </div>--}}
+
+{{--                                <div class="d-flex justify-content-end">--}}
+{{--                                    <button type="submit"--}}
+{{--                                            class="btn btn-primary text-uppercase">{{translate('submit')}}</button>--}}
+{{--                                </div>--}}
+{{--                            </div>--}}
+{{--                        </form>--}}
+{{--                    </div>--}}
+
+{{--                </div>--}}
 
             </div>
         </div>

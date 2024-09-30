@@ -22,7 +22,8 @@
                             <div class="col-md-6">
                                 <div class="row g-3">
                                     <div class="col-12">
-                                        <label for="title" class="mb-2">{{ translate('Title') }}
+                                        <label for="title" class="mb-2">{{ translate('Title') }} <span
+                                                class="text-danger">*</span>
                                         </label>
                                         <input type="text" id="title" value="{{old('title')}}"
                                                name="title" maxlength="100" class="form-control"
@@ -32,7 +33,8 @@
                                     <div class="col-12">
                                         <label for="shortDescription"
                                                class="mb-2">{{ translate('short_description') }}
-                                            <small>({{translate('Max 800 character')}})</small>
+                                            <small>({{translate('Max 800 character')}})</small> <span
+                                                class="text-danger">*</span>
                                         </label>
                                         <div class="character-count">
                                                     <textarea id="shortDescription" name="short_description" cols="30"
@@ -46,7 +48,8 @@
                                     <div class="col-12">
                                         <label for="termsConditions"
                                                class="mb-2">{{ translate('Terms & Conditions') }}
-                                            <small>({{translate('Max 1500 character')}})</small>
+                                            <small>({{translate('Max 1500 character')}})</small> <span
+                                                class="text-danger">*</span>
                                         </label>
                                         <div class="character-count">
                                                     <textarea id="termsConditions" name="terms_conditions" cols="30"
@@ -64,7 +67,8 @@
                                     <div
                                         class="d-flex flex-column justify-content-around align-items-center gap-3 mb-4">
                                         <div class="d-flex align-items-center gap-2">
-                                            <h5 class="text-capitalize">{{ translate('discount_image') }}</h5>
+                                            <h5 class="text-capitalize">{{ translate('discount_image') }} <span
+                                                    class="text-danger">*</span></h5>
                                         </div>
 
                                         <div class="d-flex">
@@ -90,24 +94,28 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="limitPerUser" class="mb-2">
-                                        {{ translate('Limit for Same User') }}
+                                        {{ translate('Limit for Same User') }} <span class="text-danger">*</span>
                                     </label>
                                     <input type="number" id="limitPerUser" name="limit_per_user"
                                            value="{{old('limit_per_user')}}" min="1"
-                                           placeholder="{{translate('Ex : 10')}}" class="form-control">
+                                           placeholder="{{translate('Ex : 10')}}" class="form-control" required>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
-                                    <label for="discountAmount" id="discountAmountLabel"
-                                           class="mb-2">{{ translate('Discount Amount') }}</label>
+                                    <label for="discountAmount"
+                                           class="mb-2"><span
+                                            id="discountAmountLabel">{{ translate('Discount Amount') }}</span> <span
+                                            class="text-danger">*</span></label>
                                     <div class="position-relative text-center">
                                         <input type="number" id="discountAmount" value="{{old('discount_amount')}}"
                                                name="discount_amount" class="form-control" placeholder="Ex: 5"
                                                step="any"
                                                required>
-                                        <select class="js-select currency-type-select" id="discountAmountType" name="discount_amount_type" required>
-                                            <option value="amount" selected>{{session()->get('currency_symbol') ?? '$'}}</option>
+                                        <select class="js-select currency-type-select" id="discountAmountType"
+                                                name="discount_amount_type" required>
+                                            <option value="amount"
+                                                    selected>{{session()->get('currency_symbol') ?? '$'}}</option>
                                             <option value="percentage">%</option>
                                         </select>
                                     </div>
@@ -131,7 +139,8 @@
                                 <div class="mb-4">
                                     <label for="minTripAmount"
                                            class="mb-2">{{ translate('Min Trip Amount') }}
-                                        ({{session()->get('currency_symbol') ?? '$'}})
+                                        ({{session()->get('currency_symbol') ?? '$'}}) <span
+                                            class="text-danger">*</span>
                                     </label>
                                     <input type="number" id="minTripAmount" name="min_trip_amount" min="1"
                                            class="form-control"
@@ -142,7 +151,7 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="start_date"
-                                           class="mb-2">{{ translate('start_date') }}</label>
+                                           class="mb-2">{{ translate('start_date') }} <span class="text-danger">*</span></label>
                                     <input type="date" value="{{old('start_date')}}" id="start_date"
                                            min="{{date('Y-m-d',strtotime(now()))}}"
                                            name="start_date" class="form-control" required>
@@ -150,7 +159,8 @@
                             </div>
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
-                                    <label for="end_date" class="mb-2">{{ translate('end_date') }}</label>
+                                    <label for="end_date" class="mb-2">{{ translate('end_date') }} <span
+                                            class="text-danger">*</span></label>
                                     <input type="date" id="end_date" value="{{old('end_date')}}" name="end_date"
                                            min="{{date('Y-m-d',strtotime(now()))}}"
                                            class="form-control" required>
@@ -162,8 +172,10 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="customerLevelDiscountType"
-                                           class="mb-2">{{ translate('select_customer_level') }}
-                                        <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip"
+                                           class="mb-2">{{ translate('select_customer_level') }} <span
+                                            class="text-danger">*</span>
+                                        <i class="bi bi-info-circle-fill text-primary cursor-pointer"
+                                           data-bs-toggle="tooltip"
                                            title="{{ translate('customer_level_select_first_otherwise_customer_not_found_in_select_customer_dropdown') }}"></i>
                                     </label>
                                     <select class="js-select-2" id="customerLevelDiscountType"
@@ -179,8 +191,11 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="customerDiscountType"
-                                           class="mb-2">{{ translate('select_customer') }}
-                                        <i class="bi bi-info-circle-fill text-primary cursor-pointer" data-bs-toggle="tooltip" title="{{ translate('customer_show_when_you_select_customer_level') }}"></i>
+                                           class="mb-2">{{ translate('select_customer') }} <span
+                                            class="text-danger">*</span>
+                                        <i class="bi bi-info-circle-fill text-primary cursor-pointer"
+                                           data-bs-toggle="tooltip"
+                                           title="{{ translate('customer_show_when_you_select_customer_level') }}"></i>
 
                                     </label>
                                     <select class="js-select-2" id="customerDiscountType"
@@ -193,7 +208,7 @@
                             <div class="col-sm-6 col-xl-4">
                                 <div class="mb-4">
                                     <label for="moduleDiscountType" class="mb-2">
-                                        {{ translate('category') }}
+                                        {{ translate('category') }} <span class="text-danger">*</span>
                                     </label>
                                     <select class="js-select-2" id="moduleDiscountType"
                                             data-placeholder="{{translate('select_category')}}"
@@ -210,7 +225,7 @@
                             <div class="col-sm-12">
                                 <div class="mb-4">
                                     <label for="zoneDiscountType" class="mb-2">
-                                        {{ translate('select_zone') }}
+                                        {{ translate('select_zone') }} <span class="text-danger">*</span>
                                     </label>
                                     <select class="js-select-2" id="zoneDiscountType"
                                             name="zone_discount_type[]"
@@ -244,8 +259,8 @@
 
         $(document).ready(function () {
             const prevImg = $('.upload-file__img_banner img').attr('src');
-            $('#discountForm').on('reset', function(){
-                setTimeout(function(){
+            $('#discountForm').on('reset', function () {
+                setTimeout(function () {
                     $('.js-select').select2("destroy").select2()
                     $('.js-select-2').select2("destroy").select2()
                     $('.upload-file__img_banner img').attr('src', prevImg);
@@ -264,7 +279,7 @@
                 amountTypeCheck();
             });
 
-            function amountTypeCheck(){
+            function amountTypeCheck() {
                 if (amountType.val() == 'amount') {
                     maxDiscountAmount.attr("readonly", "true");
                     document.getElementById('maxDiscountAmount').setAttribute("title", "{{translate('Max discount amount field not editable for discount amount type Fixed amount')}}");
@@ -300,9 +315,9 @@
                         $.each(response, function (index, value) {
                             $('#customerDiscountType').append('<option value="' + value.id + '">' + value.first_name + ' ' + value.last_name + '</option>');
                         });
-                    }else{
+                    } else {
                         let selectElement = document.getElementById('customerDiscountType');
-                        selectElement.setAttribute('disabled','disabled');
+                        selectElement.setAttribute('disabled', 'disabled');
                     }
                 }
             });

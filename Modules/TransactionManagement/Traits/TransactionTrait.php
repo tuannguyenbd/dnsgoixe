@@ -2,6 +2,7 @@
 
 namespace Modules\TransactionManagement\Traits;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -79,13 +80,11 @@ trait TransactionTrait
         //Rider account update for coupon
         if ($trip->coupon_id !== null && $trip->coupon_amount > 0) {
             $this->riderAccountUpdateWithTransactionForCoupon($trip);
-            $riderEarning += $trip->coupon_amount;
         }
 
         //Rider account update for discount
         if ($trip->discount_amount !== null && $trip->discount_amount > 0) {
             $this->riderAccountUpdateWithTransactionForDiscount($trip);
-            $riderEarning += $trip->discount_amount;
         }
 
         $this->driverLevelUpdateChecker($trip->driver);
@@ -93,13 +92,16 @@ trait TransactionTrait
 
     }
 
-    public function cashTransaction($trip): void
+    public function cashTransaction($trip, $returnFee = false): void
     {
         $adminUserId = User::where('user_type', ADMIN_USER_TYPES[0])->first()->id;
         DB::beginTransaction();
         $adminReceived = $trip->fee->admin_commission;//30
-        $tripBalanceAfterRemoveCommission = $trip->paid_fare - $trip->fee->admin_commission; //70
-        $riderEarning = $tripBalanceAfterRemoveCommission;
+        if ($returnFee) {
+            $tripBalanceAfterRemoveCommission = ($trip->paid_fare - $trip->return_fee) - $trip->fee->admin_commission; //70
+        } else {
+            $tripBalanceAfterRemoveCommission = $trip->paid_fare - $trip->fee->admin_commission; //70
+        }
 
 
         //Rider account update
@@ -132,13 +134,11 @@ trait TransactionTrait
         //Rider account update for coupon
         if ($trip->coupon_id !== null && $trip->coupon_amount > 0) {
             $this->riderAccountUpdateWithTransactionForCoupon($trip);
-            $riderEarning += $trip->coupon_amount;
         }
 
         //Rider account update for discount
         if ($trip->discount_amount !== null && $trip->discount_amount > 0) {
             $this->riderAccountUpdateWithTransactionForDiscount($trip);
-            $riderEarning += $trip->discount_amount;
         }
 
         //Admin account update
@@ -169,6 +169,306 @@ trait TransactionTrait
 
         $this->driverLevelUpdateChecker($trip->driver);
 
+        DB::commit();
+    }
+
+    public function cashReturnFeeTransaction($trip): void
+    {
+        $amount = $trip->due_amount;
+        DB::beginTransaction();
+        //Rider account update
+        $riderAccount = UserAccount::where('user_id', $trip->driver->id)->first();
+        $riderAccount->received_balance += $amount;
+        $riderAccount->save();
+
+        //Rider account update transaction 1
+        $riderTransaction1 = new Transaction();
+        $riderTransaction1->attribute = 'driver_earning';
+        $riderTransaction1->attribute_id = $trip->id;
+        $riderTransaction1->credit = $amount;
+        $riderTransaction1->balance = $riderAccount->received_balance;
+        $riderTransaction1->user_id = $trip->driver->id;
+        $riderTransaction1->account = 'received_balance';
+        $riderTransaction1->save();
+
+        $this->driverLevelUpdateChecker($trip->driver);
+
+        DB::commit();
+    }
+
+    public function driverParcelCancellationTransaction($trip): void
+    {
+
+        $adminUserId = User::where('user_type', ADMIN_USER_TYPES[0])->first()->id;
+        DB::beginTransaction();
+        $amount = $trip->cancellation_fee;
+
+        //Rider account update for reverse
+        $riderAccount = UserAccount::where('user_id', $trip->driver->id)->first();
+        $riderAccount->payable_balance += $amount;
+        $riderAccount->save();
+
+        //Rider account  update transaction 1 for reverse
+        $riderTransaction1 = new Transaction();
+        $riderTransaction1->attribute = 'driver_parcel_cancellation_fee';
+        $riderTransaction1->attribute_id = $trip->id;
+        $riderTransaction1->credit = $amount;
+        $riderTransaction1->balance = $riderAccount->payable_balance;
+        $riderTransaction1->user_id = $trip->driver->id;
+        $riderTransaction1->account = 'payable_balance';
+        $riderTransaction1->save();
+
+        //Admin account update for reverse
+        $adminAccount = UserAccount::where('user_id', $adminUserId)->first();
+        $adminAccount->receivable_balance += $amount;
+        $adminAccount->save();
+
+        //Admin transaction 1 for reverse
+        $adminTransaction = new Transaction();
+        $adminTransaction->attribute = 'driver_earning_reverse';
+        $adminTransaction->attribute_id = $trip->id;
+        $adminTransaction->credit = $amount;
+        $adminTransaction->balance = $adminAccount->receivable_balance;
+        $adminTransaction->user_id = $adminUserId;
+        $adminTransaction->account = 'receivable_balance';
+        $adminTransaction->trx_ref_id = $riderTransaction1->id;
+        $adminTransaction->save();
+        DB::commit();
+
+    }
+
+    public function senderCashPaymentDriverParcelCancelReverseTransaction($trip): void
+    {
+        $adminUserId = User::where('user_type', ADMIN_USER_TYPES[0])->first()->id;
+        DB::beginTransaction();
+        $tripBalanceAfterRemoveCommission = $trip->paid_fare - $trip->fee->admin_commission; //70
+
+        //Rider account update for reverse
+        $riderAccount = UserAccount::where('user_id', $trip->driver->id)->first();
+        $riderAccount->payable_balance += $tripBalanceAfterRemoveCommission; //30
+        $riderAccount->received_balance -= $tripBalanceAfterRemoveCommission; //70
+        $riderAccount->save();
+
+        //Rider account  update transaction 1 for reverse
+        $riderTransaction1 = new Transaction();
+        $riderTransaction1->attribute = 'driver_earning_reverse';
+        $riderTransaction1->attribute_id = $trip->id;
+        $riderTransaction1->debit = $tripBalanceAfterRemoveCommission;
+        $riderTransaction1->balance = $riderAccount->received_balance;
+        $riderTransaction1->user_id = $trip->driver->id;
+        $riderTransaction1->account = 'received_balance';
+        $riderTransaction1->save();
+
+        //Rider account update transaction 2 for reverse
+        $riderTransaction2 = new Transaction();
+        $riderTransaction2->attribute = 'driver_earning_reverse';
+        $riderTransaction2->attribute_id = $trip->id;
+        $riderTransaction2->credit = $tripBalanceAfterRemoveCommission;
+        $riderTransaction2->balance = $riderAccount->payable_balance;
+        $riderTransaction2->user_id = $trip->driver->id;
+        $riderTransaction2->account = 'payable_balance';
+        $riderTransaction2->trx_ref_id = $riderTransaction1->id;
+        $riderTransaction2->save();
+
+        //Rider account update for coupon reverse
+        if ($trip->coupon_id !== null && $trip->coupon_amount > 0) {
+            $this->riderAccountUpdateWithTransactionForCouponReverse($trip);
+        }
+
+        //Rider account update for discount reverse
+        if ($trip->discount_amount !== null && $trip->discount_amount > 0) {
+            $this->riderAccountUpdateWithTransactionForDiscountReverse($trip);
+        }
+
+        //Admin account update for reverse
+        $adminAccount = UserAccount::where('user_id', $adminUserId)->first();
+        $adminAccount->receivable_balance += $tripBalanceAfterRemoveCommission; //30
+        $adminAccount->save();
+
+        //Admin transaction 1 for reverse
+        $adminTransaction = new Transaction();
+        $adminTransaction->attribute = 'driver_earning_reverse';
+        $adminTransaction->attribute_id = $trip->id;
+        $adminTransaction->credit = $tripBalanceAfterRemoveCommission;
+        $adminTransaction->balance = $adminAccount->receivable_balance;
+        $adminTransaction->user_id = $adminUserId;
+        $adminTransaction->account = 'receivable_balance';
+        $adminTransaction->trx_ref_id = $riderTransaction2->id;
+        $adminTransaction->save();
+
+        //Admin account update for coupon amount reverse
+        if ($trip->coupon_id !== null && $trip->coupon_amount > 0) {
+            $this->adminAccountUpdateWithTransactionForCouponReverse($trip, $adminUserId);
+        }
+
+        //Admin account update for discount amount reverse
+        if ($trip->discount_amount !== null && $trip->discount_amount > 0) {
+            $this->adminAccountUpdateWithTransactionForDiscountReverse($trip, $adminUserId);
+        }
+
+        //customer account credit parcel cancel driver return
+        $customerAccount = UserAccount::where('user_id', $trip->customer->id)->first();
+        $customerAccount->wallet_balance += $trip->paid_fare;
+        $customerAccount->save();
+
+        //customer transaction (debit)
+        $customerTransaction = new Transaction();
+        $customerTransaction->attribute = 'parcel_cancel_payment_reverse';
+        $customerTransaction->attribute_id = $trip->id;
+        $customerTransaction->credit = $trip->paid_fare;
+        $customerTransaction->balance = $customerAccount->wallet_balance;
+        $customerTransaction->user_id = $trip->customer->id;
+        $customerTransaction->account = 'wallet_balance';
+        $customerTransaction->save();
+        DB::commit();
+
+    }
+
+    public function senderDigitalPaymentDriverParcelCancelReverseTransaction($trip): void
+    {
+        $adminUserId = User::where('user_type', ADMIN_USER_TYPES[0])->first()->id;
+        DB::beginTransaction();
+        $tripBalanceAfterRemoveCommission = $trip->paid_fare - $trip->fee->admin_commission; //70
+
+        //customer account credit parcel cancel driver return
+        $customerAccount = UserAccount::where('user_id', $trip->customer->id)->first();
+        $customerAccount->wallet_balance += $trip->paid_fare;
+        $customerAccount->save();
+
+        //customer transaction (debit)
+        $customerTransaction = new Transaction();
+        $customerTransaction->attribute = 'parcel_cancel_payment_reverse';
+        $customerTransaction->attribute_id = $trip->id;
+        $customerTransaction->credit = $trip->paid_fare;
+        $customerTransaction->balance = $customerAccount->wallet_balance;
+        $customerTransaction->user_id = $trip->customer->id;
+        $customerTransaction->account = 'wallet_balance';
+        $customerTransaction->save();
+
+        //Admin account update (payable and wallet balance +)
+        $adminAccount = UserAccount::where('user_id', $adminUserId)->first();
+        $adminAccount->payable_balance -= $tripBalanceAfterRemoveCommission;
+        $adminAccount->save();
+
+        //Admin transaction 1 (payable)
+        $adminTransaction1 = new Transaction();
+        $adminTransaction1->attribute = 'driver_earning_reverse';
+        $adminTransaction1->attribute_id = $trip->id;
+        $adminTransaction1->debit = $tripBalanceAfterRemoveCommission;
+        $adminTransaction1->balance = $adminAccount->payable_balance;
+        $adminTransaction1->user_id = $adminUserId;
+        $adminTransaction1->account = 'payable_balance';
+        $adminTransaction1->save();
+
+        //Admin account update for coupon amount
+        if ($trip->coupon_id !== null && $trip->coupon_amount > 0) {
+            $this->adminAccountUpdateWithTransactionForCouponReverse($trip, $adminUserId);
+        }
+
+        //Admin account update for discount amount
+        if ($trip->discount_amount !== null && $trip->discount_amount > 0) {
+            $this->adminAccountUpdateWithTransactionForDiscountReverse($trip, $adminUserId);
+        }
+
+        //Rider account update (- receivable_balance)
+        $riderAccount = UserAccount::where('user_id', $trip->driver->id)->first();
+        $riderAccount->receivable_balance -= $tripBalanceAfterRemoveCommission; //70
+        $riderAccount->save();
+
+        //Rider transaction 1
+        $riderTransaction = new Transaction();
+        $riderTransaction->attribute = 'driver_earning_reverse';
+        $riderTransaction->attribute_id = $trip->id;
+        $riderTransaction->debit = $tripBalanceAfterRemoveCommission;
+        $riderTransaction->balance = $riderAccount->receivable_balance;
+        $riderTransaction->user_id = $trip->driver->id;
+        $riderTransaction->account = 'receivable_balance';
+        $riderTransaction->save();
+
+        //Rider account update for coupon
+        if ($trip->coupon_id !== null && $trip->coupon_amount > 0) {
+            $this->riderAccountUpdateWithTransactionForCouponReverse($trip);
+        }
+
+        //Rider account update for discount
+        if ($trip->discount_amount !== null && $trip->discount_amount > 0) {
+            $this->riderAccountUpdateWithTransactionForDiscountReverse($trip);
+        }
+        DB::commit();
+    }
+
+    public function senderWalletPaymentDriverParcelCancelReverseTransaction($trip): void
+    {
+        $adminUserId = User::where('user_type', ADMIN_USER_TYPES[0])->first()->id;
+
+        DB::beginTransaction();
+        $tripBalanceAfterRemoveCommission = $trip->paid_fare - $trip->fee->admin_commission; //70
+
+        //customer account credit parcel cancel driver return
+        $customerAccount = UserAccount::where('user_id', $trip->customer->id)->first();
+        $customerAccount->wallet_balance += $trip->paid_fare;
+        $customerAccount->save();
+
+        //customer transaction (debit)
+        $customerTransaction = new Transaction();
+        $customerTransaction->attribute = 'parcel_cancel_payment_reverse';
+        $customerTransaction->attribute_id = $trip->id;
+        $customerTransaction->credit = $trip->paid_fare;
+        $customerTransaction->balance = $customerAccount->wallet_balance;
+        $customerTransaction->user_id = $trip->customer->id;
+        $customerTransaction->account = 'wallet_balance';
+        $customerTransaction->save();
+
+        //Admin account update (payable and wallet balance +)
+        $adminAccount = UserAccount::where('user_id', $adminUserId)->first();
+        $adminAccount->payable_balance -= $tripBalanceAfterRemoveCommission;
+        $adminAccount->save();
+
+        //Admin transaction 1 (payable)
+        $adminTransaction1 = new Transaction();
+        $adminTransaction1->attribute = 'driver_earning_reverse';
+        $adminTransaction1->attribute_id = $trip->id;
+        $adminTransaction1->debit = $tripBalanceAfterRemoveCommission;
+        $adminTransaction1->balance = $adminAccount->payable_balance;
+        $adminTransaction1->user_id = $adminUserId;
+        $adminTransaction1->account = 'payable_balance';
+        $adminTransaction1->trx_ref_id = $customerTransaction->id;
+        $adminTransaction1->save();
+
+        //Admin account update for coupon amount
+        if ($trip->coupon_id !== null && $trip->coupon_amount > 0) {
+            $this->adminAccountUpdateWithTransactionForCouponReverse($trip, $adminUserId);
+        }
+
+        //Admin account update for discount amount
+        if ($trip->discount_amount !== null && $trip->discount_amount > 0) {
+            $this->adminAccountUpdateWithTransactionForDiscountReverse($trip, $adminUserId);
+        }
+
+        //Rider account update (- receivable_balance)
+        $riderAccount = UserAccount::where('user_id', $trip->driver->id)->first();
+        $riderAccount->receivable_balance -= $tripBalanceAfterRemoveCommission; //70
+        $riderAccount->save();
+
+        //Rider transaction 1
+        $riderTransaction = new Transaction();
+        $riderTransaction->attribute = 'driver_earning_reverse';
+        $riderTransaction->attribute_id = $trip->id;
+        $riderTransaction->debit = $tripBalanceAfterRemoveCommission;
+        $riderTransaction->balance = $riderAccount->receivable_balance;
+        $riderTransaction->user_id = $trip->driver->id;
+        $riderTransaction->account = 'receivable_balance';
+        $riderTransaction->save();
+
+        //Rider account update for coupon
+        if ($trip->coupon_id !== null && $trip->coupon_amount > 0) {
+            $this->riderAccountUpdateWithTransactionForCouponReverse($trip);
+        }
+
+        //Rider account update for discount
+        if ($trip->discount_amount !== null && $trip->discount_amount > 0) {
+            $this->riderAccountUpdateWithTransactionForDiscountReverse($trip);
+        }
         DB::commit();
     }
 
@@ -252,13 +552,11 @@ trait TransactionTrait
         //Rider account update for coupon
         if ($trip->coupon_id !== null && $trip->coupon_amount > 0) {
             $this->riderAccountUpdateWithTransactionForCoupon($trip);
-            $riderEarning += $trip->coupon_amount;
         }
 
         //Rider account update for discount
         if ($trip->discount_amount !== null && $trip->discount_amount > 0) {
             $this->riderAccountUpdateWithTransactionForDiscount($trip);
-            $riderEarning += $trip->discount_amount;
         }
 
         $this->driverLevelUpdateChecker($trip->driver);
@@ -266,7 +564,6 @@ trait TransactionTrait
 
 
     }
-
 
     private function adminAccountUpdateWithTransactionForCoupon($trip, $adminUserId)
     {
@@ -333,6 +630,78 @@ trait TransactionTrait
         $riderTransactionForDiscount->attribute = 'driver_earning';
         $riderTransactionForDiscount->attribute_id = $trip->id;
         $riderTransactionForDiscount->credit = $trip->discount_amount;
+        $riderTransactionForDiscount->balance = $riderAccountForCoupon->receivable_balance;
+        $riderTransactionForDiscount->user_id = $trip->driver->id;
+        $riderTransactionForDiscount->transaction_type = DISCOUNT;
+        $riderTransactionForDiscount->account = 'receivable_balance';
+        $riderTransactionForDiscount->save();
+    }
+
+    private function adminAccountUpdateWithTransactionForCouponReverse($trip, $adminUserId)
+    {
+        $adminAccountForCoupon = UserAccount::where('user_id', $adminUserId)->first();
+        $adminAccountForCoupon->payable_balance -= $trip->coupon_amount; //30
+        $adminAccountForCoupon->save();
+
+        //Admin transaction for coupon amount
+        $adminTransactionForCoupon = new Transaction();
+        $adminTransactionForCoupon->attribute = 'driver_earning_reverse';
+        $adminTransactionForCoupon->attribute_id = $trip->id;
+        $adminTransactionForCoupon->debit = $trip->coupon_amount;
+        $adminTransactionForCoupon->balance = $adminAccountForCoupon->payable_balance;
+        $adminTransactionForCoupon->user_id = $adminUserId;
+        $adminTransactionForCoupon->transaction_type = COUPON;
+        $adminTransactionForCoupon->account = 'payable_balance';
+        $adminTransactionForCoupon->save();
+    }
+
+    private function adminAccountUpdateWithTransactionForDiscountReverse($trip, $adminUserId)
+    {
+        $adminAccountForDiscount = UserAccount::where('user_id', $adminUserId)->first();
+        $adminAccountForDiscount->payable_balance -= $trip->discount_amount; //30
+        $adminAccountForDiscount->save();
+
+        //Admin transaction for coupon amount
+        $adminTransactionForDiscount = new Transaction();
+        $adminTransactionForDiscount->attribute = 'driver_earning_reverse';
+        $adminTransactionForDiscount->attribute_id = $trip->id;
+        $adminTransactionForDiscount->debit = $trip->discount_amount;
+        $adminTransactionForDiscount->balance = $adminAccountForDiscount->payable_balance;
+        $adminTransactionForDiscount->user_id = $adminUserId;
+        $adminTransactionForDiscount->transaction_type = DISCOUNT;
+        $adminTransactionForDiscount->account = 'payable_balance';
+        $adminTransactionForDiscount->save();
+    }
+
+    private function riderAccountUpdateWithTransactionForCouponReverse($trip)
+    {
+        $riderAccountForCoupon = UserAccount::where('user_id', $trip->driver->id)->first();
+        $riderAccountForCoupon->receivable_balance -= $trip->coupon_amount;
+        $riderAccountForCoupon->save();
+
+        //Rider transaction for coupon
+        $riderTransactionForCoupon = new Transaction();
+        $riderTransactionForCoupon->attribute = 'driver_earning_reverse';
+        $riderTransactionForCoupon->attribute_id = $trip->id;
+        $riderTransactionForCoupon->debit = $trip->coupon_amount;
+        $riderTransactionForCoupon->balance = $riderAccountForCoupon->receivable_balance;
+        $riderTransactionForCoupon->user_id = $trip->driver->id;
+        $riderTransactionForCoupon->transaction_type = COUPON;
+        $riderTransactionForCoupon->account = 'receivable_balance';
+        $riderTransactionForCoupon->save();
+    }
+
+    private function riderAccountUpdateWithTransactionForDiscountReverse($trip)
+    {
+        $riderAccountForCoupon = UserAccount::where('user_id', $trip->driver->id)->first();
+        $riderAccountForCoupon->receivable_balance -= $trip->discount_amount;
+        $riderAccountForCoupon->save();
+
+        //Rider transaction for discount
+        $riderTransactionForDiscount = new Transaction();
+        $riderTransactionForDiscount->attribute = 'driver_earning_reverse';
+        $riderTransactionForDiscount->attribute_id = $trip->id;
+        $riderTransactionForDiscount->debit = $trip->discount_amount;
         $riderTransactionForDiscount->balance = $riderAccountForCoupon->receivable_balance;
         $riderTransactionForDiscount->user_id = $trip->driver->id;
         $riderTransactionForDiscount->transaction_type = DISCOUNT;
@@ -636,6 +1005,49 @@ trait TransactionTrait
         DB::commit();
     }
 
+    #referral earning transaction
+    public function customerReferralEarningTransaction($user, $amount): void
+    {
+        DB::beginTransaction();
+        //Customer account update
+        $customer = UserAccount::query()->firstWhere('user_id', $user->id);
+        $customer->wallet_balance += $amount;
+        $customer->referral_earn += $amount;
+        $customer->save();
+
+        //customer transaction (credit)
+        $primary_transaction = new Transaction();
+        $primary_transaction->attribute = 'referral_earning';
+        $primary_transaction->credit = $amount;
+        $primary_transaction->balance = $customer->wallet_balance;
+        $primary_transaction->user_id = $user->id;
+        $primary_transaction->account = 'wallet_balance';
+        $primary_transaction->save();
+
+        DB::commit();
+    }
+
+    public function driverReferralEarningTransaction($user, $amount): void
+    {
+        DB::beginTransaction();
+        $driver = UserAccount::query()->firstWhere('user_id', $user->id);
+        $driver->receivable_balance += $amount;
+        $driver->referral_earn += $amount;
+        $driver->save();
+
+        //driver transaction (credit)
+        $primary_transaction = new Transaction();
+        $primary_transaction->attribute = 'referral_earning';
+        $primary_transaction->credit = $amount;
+        $primary_transaction->balance = $driver->receivable_balance;
+        $primary_transaction->user_id = $user->id;
+        $primary_transaction->account = 'receivable_balance';
+        $primary_transaction->save();
+        DB::commit();
+    }
+
+    #end referral earning transaction
+
     public function collectCashWithoutAdjustTransaction($user, $amount)
     {
         DB::beginTransaction();
@@ -768,5 +1180,55 @@ trait TransactionTrait
         DB::commit();
     }
 
+    public function returnTimeExceedFeeTransaction($trip)
+    {
+        $parcelReturnTimeFeeStatus = businessConfig('parcel_return_time_fee_status', PARCEL_SETTINGS)?->value ?? false;
+        $time = (int)businessConfig('return_time_for_driver', PARCEL_SETTINGS)?->value;
+        $timeType = businessConfig('return_time_type_for_driver', PARCEL_SETTINGS)?->value;
+        if ($parcelReturnTimeFeeStatus) {
+            if ($timeType === 'hour') {
+                $cancelledTime = Carbon::parse($trip?->tripStatus?->cancelled)->addHours($time);
+            } else {
+                $cancelledTime = Carbon::parse($trip?->tripStatus?->cancelled)->addDays($time);
+            }
+            $returnTimeExceedFee = (double)businessConfig('return_fee_for_driver_time_exceed', PARCEL_SETTINGS)?->value ?? 0;
+            if ($cancelledTime->lessThan(Carbon::now()) && $returnTimeExceedFee > 0) {
+                $adminUserId = User::where('user_type', ADMIN_USER_TYPES[0])->first()->id;
+                DB::beginTransaction();
 
+                //Rider account update
+                $riderAccount = UserAccount::where('user_id', $trip->driver->id)->first();
+                $riderAccount->payable_balance += $returnTimeExceedFee;
+                $riderAccount->save();
+
+                //Rider account update transaction 1
+                $riderTransaction1 = new Transaction();
+                $riderTransaction1->attribute = 'return_time_exceed_fee';
+                $riderTransaction1->attribute_id = $trip->id;
+                $riderTransaction1->debit = $returnTimeExceedFee;
+                $riderTransaction1->balance = $riderAccount->payable_balance;
+                $riderTransaction1->user_id = $trip->driver->id;
+                $riderTransaction1->account = 'payable_balance';
+                $riderTransaction1->save();
+
+                //Admin account update
+                $adminAccount = UserAccount::where('user_id', $adminUserId)->first();
+                $adminAccount->receivable_balance += $returnTimeExceedFee; //30
+                $adminAccount->save();
+
+                //Admin transaction 1
+                $adminTransaction = new Transaction();
+                $adminTransaction->attribute = 'return_time_exceed_fee';
+                $adminTransaction->attribute_id = $trip->id;
+                $adminTransaction->credit = $returnTimeExceedFee;
+                $adminTransaction->balance = $adminAccount->receivable_balance;
+                $adminTransaction->user_id = $adminUserId;
+                $adminTransaction->account = 'receivable_balance';
+                $adminTransaction->trx_ref_id = $riderTransaction1->id;
+                $adminTransaction->save();
+                DB::commit();
+            }
+        }
+
+    }
 }

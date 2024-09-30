@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+use Modules\BusinessManagement\Entities\ExternalConfiguration;
+use Modules\BusinessManagement\Entities\ReferralEarningSetting;
+use Modules\UserManagement\Entities\User;
 use Pusher\Pusher;
 use Pusher\PusherException;
 use Rap2hpoutre\FastExcel\FastExcel;
@@ -121,6 +125,13 @@ if (!function_exists('paginationLimit')) {
     }
 }
 
+if (!function_exists('stepValue')) {
+    function stepValue()
+    {
+        $points = (int)getSession('currency_decimal_point') ?? 0;
+        return 1 / pow(10, $points);
+    }
+}
 if (!function_exists('businessConfig')) {
     function businessConfig($key, $settingsType = null)
     {
@@ -136,6 +147,71 @@ if (!function_exists('businessConfig')) {
         }
 
         return (isset($config)) ? $config : null;
+    }
+}
+if (!function_exists('referralEarningSetting')) {
+    function referralEarningSetting($key, $settingsType = null)
+    {
+        try {
+            $config = ReferralEarningSetting::query()
+                ->where('key_name', $key)
+                ->when($settingsType, function ($query) use ($settingsType) {
+                    $query->where('settings_type', $settingsType);
+                })
+                ->first();
+        } catch (Exception $exception) {
+            return null;
+        }
+
+        return (isset($config)) ? $config : null;
+    }
+}
+if (!function_exists('externalConfig')) {
+    function externalConfig($key)
+    {
+        try {
+            $config = ExternalConfiguration::query()
+                ->where('key', $key)
+                ->first();
+        } catch (Exception $exception) {
+            return null;
+        }
+        return (isset($config)) ? $config : null;
+    }
+}
+if (!function_exists('checkExternalConfiguration')) {
+    function checkExternalConfiguration($externalBaseUrl, $externalTokem, $drivemondToken)
+    {
+        $activationMode = externalConfig('activation_mode')?->value;
+        $martBaseUrl = externalConfig('mart_base_url')?->value;
+        $martToken = externalConfig('mart_token')?->value;
+        $systemSelfToken = externalConfig('system_self_token')?->value;
+        return $activationMode == 1 && $martBaseUrl == $externalBaseUrl && $martToken == $externalTokem && $systemSelfToken == $drivemondToken;
+    }
+}
+if (!function_exists('checkSelfExternalConfiguration')) {
+    function checkSelfExternalConfiguration()
+    {
+        $activationMode = externalConfig('activation_mode')?->value;
+        $martBaseUrl = externalConfig('mart_base_url')?->value;
+        $martToken = externalConfig('mart_token')?->value;
+        $systemSelfToken = externalConfig('system_self_token')?->value;
+        return $activationMode == 1 && $martBaseUrl != null && $martToken != null && $systemSelfToken != null;
+    }
+}
+
+if (!function_exists('generateReferralCode')) {
+    function generateReferralCode($user = null)
+    {
+        $refCode = strtoupper(Str::random(10));
+        if (User::where('ref_code', $refCode)->exists()) {
+            generateReferralCode();
+        }
+        if ($user) {
+            $user->ref_code = $refCode;
+            $user->save();
+        }
+        return $refCode;
     }
 }
 
@@ -615,6 +691,35 @@ if (!function_exists('abbreviateNumber')) {
         return round($abbreviated_number, $points) . $abbreviations[$abbreviation_index];
     }
 }
+
+if (!function_exists('abbreviateNumberWithSymbol')) {
+    #TODO
+    function abbreviateNumberWithSymbol($number)
+    {
+        $points = (int)getSession('currency_decimal_point') ?? 0;
+        $position = getSession('currency_symbol_position') ?? 'left';
+        if (session::has('currency_symbol')) {
+            $symbol = session()->get('currency_symbol');
+        } else {
+            $symbol = businessConfig('currency_symbol', 'business_information')->value ?? "$";
+        }
+        $abbreviations = ['', 'K', 'M', 'B', 'T'];
+        $abbreviated_number = $number;
+        $abbreviation_index = 0;
+
+        while ($abbreviated_number >= 1000 && $abbreviation_index < count($abbreviations) - 1) {
+            $abbreviated_number /= 1000;
+            $abbreviation_index++;
+        }
+
+        if ($position == 'left') {
+            return $symbol . ' ' . round($abbreviated_number, $points) . $abbreviations[$abbreviation_index];
+        } else {
+            return round($abbreviated_number, $points) . $abbreviations[$abbreviation_index] . ' ' . $symbol;
+        }
+
+    }
+}
 if (!function_exists('removeInvalidCharcaters')) {
     function removeInvalidCharcaters($str)
     {
@@ -624,7 +729,7 @@ if (!function_exists('removeInvalidCharcaters')) {
 
 if (!function_exists('textVariableDataFormat')) {
     function textVariableDataFormat($value, $tipsAmount = null, $levelName = null, $walletAmount = null, $tripId = null,
-                                    $userName = null, $withdrawNote = null, $paidAmount = null, $methodName = null)
+                                    $userName = null, $withdrawNote = null, $paidAmount = null, $methodName = null, $referralRewardAmount = null, $otp = null)
     {
         $data = $value;
         if ($value) {
@@ -648,9 +753,15 @@ if (!function_exists('textVariableDataFormat')) {
             if ($walletAmount) {
                 $data = str_replace("{walletAmount}", $walletAmount, $data);
             }
+            if ($referralRewardAmount) {
+                $data = str_replace("{referralRewardAmount}", $referralRewardAmount, $data);
+            }
 
             if ($tripId) {
                 $data = str_replace("{tripId}", $tripId, $data);
+            }
+            if ($otp) {
+                $data = str_replace("{otp}", $otp, $data);
             }
             if ($userName) {
                 $data = str_replace("{userName}", $userName, $data);
@@ -699,6 +810,41 @@ if (!function_exists('checkMaintenanceMode')) {
             'maintenance_messages' => businessConfig('maintenance_message_setup')?->value ?? null,
             'maintenance_type_and_duration' => count($selectedMaintenanceDuration) > 0 ? $selectedMaintenanceDuration : null,
         ];
+    }
+}
+
+if (!function_exists('insertBusinessSetting')) {
+    function insertBusinessSetting($keyName, $settingType = null, $value = null)
+    {
+        $data = BusinessSetting::where('key_name', $keyName)->where('settings_type', $settingType)->first();
+        if (!$data) {
+            BusinessSetting::updateOrCreate(['key_name' => $keyName, 'settings_type' => $settingType], [
+                'value' => $value,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+        return true;
+    }
+}
+
+if (!function_exists('hexToRgb')) {
+    function hexToRgb($hex)
+    {
+        // Remove the hash at the start if it's there
+        $hex = ltrim($hex, '#');
+
+        // If the hex code is in shorthand (3 characters), convert to full form
+        if (strlen($hex) == 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+
+        // Convert hex to RGB values
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+
+        return "$r, $g, $b";
     }
 }
 

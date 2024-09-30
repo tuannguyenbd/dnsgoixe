@@ -12,7 +12,8 @@
             <div class="d-flex align-items-center gap-3 justify-content-between mb-4">
                 <h2 class="fs-22 text-capitalize">{{ translate('add_New_Vehicle') }}</h2>
             </div>
-            <form id="vehicle_form" action="{{ route('admin.vehicle.store') }}" enctype="multipart/form-data" method="POST">
+            <form id="vehicle_form" action="{{ route('admin.vehicle.store') }}" enctype="multipart/form-data"
+                  method="POST">
                 @csrf
 
                 <div class="row mb-3">
@@ -28,9 +29,9 @@
                                             <label for="brand_id" class="mb-2">{{ translate('vehicle_brand') }}
                                                 <span class="text-danger">*</span></label>
                                             <select class="js-select-ajax" name="brand_id" id="brand_id"
-                                                data-placeholder="{{ translate('select_brand') }}"
-                                                onchange="ajax_models('{{ url('/') }}/admin/vehicle/attribute-setup/model/ajax-models/'+this.value)"
-                                                required>
+                                                    data-placeholder="{{ translate('select_brand') }}"
+                                                    onchange="ajax_models('{{ url('/') }}/admin/vehicle/attribute-setup/model/ajax-models/'+this.value)"
+                                                    required>
 
                                             </select>
                                         </div>
@@ -39,20 +40,22 @@
                                         <div class="mb-4" id="model-selector">
                                             <label for="model_id" class="mb-2">{{ translate('vehicle_model') }}
                                                 <span class="text-danger">*</span></label>
-                                            <select class="js-select-ajax theme-input-style w-100 form-control" name="model_id"
-                                                id="model_id"
-                                                data-placeholder="{{ translate('please_select_vehicle_model') }}"
-                                                required>
+                                            <select class="js-select-ajax theme-input-style w-100 form-control"
+                                                    name="model_id"
+                                                    id="model_id"
+                                                    data-placeholder="{{ translate('please_select_vehicle_model') }}"
+                                                    required>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-sm-6 col-xl-4">
                                         <div class="mb-4 text-capitalize">
                                             <label for="vehicle_category"
-                                                class="mb-2">{{ translate('vehicle_category') }} <span
+                                                   class="mb-2">{{ translate('vehicle_category') }} <span
                                                     class="text-danger">*</span></label>
                                             <select id="vehicle_category" class="js-select-ajax" name="category_id"
-                                                data-placeholder="{{ translate('select_vehicle_category') }}" required>
+                                                    data-placeholder="{{ translate('select_vehicle_category') }}"
+                                                    required>
 
                                             </select>
                                         </div>
@@ -60,30 +63,32 @@
                                     <div class="col-sm-6 col-xl-4">
                                         <div class="mb-4">
                                             <label for="licence_plate_num"
-                                                class="mb-2">{{ translate('licence_plate_number') }} <span
+                                                   class="mb-2">{{ translate('licence_plate_number') }} <span
                                                     class="text-danger">*</span></label>
                                             <input type="text" value="{{ old('licence_plate_number') }}"
-                                                id="licence_plate_number" class="form-control" name="licence_plate_number"
-                                                placeholder="Ex: DB-3212 " required>
+                                                   id="licence_plate_number" class="form-control"
+                                                   name="licence_plate_number"
+                                                   placeholder="Ex: DB-3212 " required>
                                         </div>
                                     </div>
                                     <div class="col-sm-6 col-xl-4">
                                         <div class="mb-4">
                                             <label for="licence_expire_date"
-                                                class="mb-2">{{ translate('licence_expire_date') }} <span
+                                                   class="mb-2">{{ translate('licence_expire_date') }} <span
                                                     class="text-danger">*</span></label>
                                             <input type="date" id="licence_expire_date" name="licence_expire_date"
-                                                class="form-control" required>
+                                                   class="form-control" required>
                                         </div>
                                     </div>
                                     <div class="col-sm-6 col-xl-4">
                                         <div class="mb-4">
                                             <label for="vin_number" class="mb-2">{{ strtoupper(translate('vin')) }}
                                                 {{ translate('number') }}
-                                                </label>
+                                            </label>
                                             <input type="text" value="{{ old('vin_number') }}" id="vin_number"
-                                                class="form-control" name="vin_number" placeholder="Ex: 1HGBH41JXMN109186"
-                                                >
+                                                   class="form-control" name="vin_number"
+                                                   placeholder="Ex: 1HGBH41JXMN109186"
+                                            >
                                         </div>
                                     </div>
                                     <div class="col-sm-6 col-xl-4">
@@ -91,15 +96,20 @@
                                             <label for="transmission" class="mb-2">{{ translate('transmission') }}
                                             </label>
                                             <input type="text" value="{{ old('transmission') }}" id="transmission"
-                                                class="form-control" name="transmission" placeholder="Ex: AMT">
+                                                   class="form-control" name="transmission" placeholder="Ex: AMT">
                                         </div>
                                     </div>
                                     <div class="col-sm-6 col-xl-4">
                                         <div class="mb-4">
-                                            <label for="parcel_weight_capacity" class="mb-2">{{ translate('parcel_weight_capacity') }} ({{translate("Kg")}})
+                                            <label for="parcel_weight_capacity"
+                                                   class="mb-2">{{ translate('parcel_weight_capacity') }}
+                                                ({{translate("Kg")}})
                                             </label>
-                                            <input type="number" maxlength="99999999" value="{{ old('parcel_weight_capacity') }}" id="parcel_weight_capacity"
-                                                class="form-control" name="parcel_weight_capacity" placeholder="Ex: 10">
+                                            <input type="number" maxlength="99999999"
+                                                   value="{{ old('parcel_weight_capacity') }}"
+                                                   id="parcel_weight_capacity"
+                                                   class="form-control" name="parcel_weight_capacity"
+                                                   placeholder="Ex: 10">
                                         </div>
                                     </div>
                                     <div class="col-sm-6 col-xl-4">
@@ -134,7 +144,7 @@
                                             <label for="driver" class="mb-2">{{ translate('driver') }} <span
                                                     class="text-danger">*</span></label>
                                             <select required class="js-select-driver required" id="driver"
-                                                name="driver_id">
+                                                    name="driver_id">
                                                 <option value="" selected disabled>
                                                     {{ translate('select_driver') }}</option>
 
@@ -152,16 +162,18 @@
                                 <h5 class="mb-4 text-capitalize">{{ translate('upload_documents') }}</h5>
 
                                 <div class="d-flex flex-wrap gap-3">
+                                    <div class="d-flex flex-wrap gap-3" id="selected-files-container"></div>
+                                    <div id="input-data"></div>
+                                    <!-- Upload New Documents -->
                                     <div class="upload-file file__input" id="file__input">
                                         <input type="file" class="upload-file__input2" multiple="multiple"
-                                            name="upload_documents[]" required>
+                                        >
                                         <div class="upload-file__img2">
                                             <div class="upload-box rounded media gap-4 align-items-center p-4 px-lg-5">
                                                 <i class="bi bi-cloud-arrow-up-fill fs-20"></i>
                                                 <div class="media-body">
                                                     <p class="text-muted mb-2 fs-12">{{ translate('upload') }}</p>
-                                                    <h6 class="fs-12 text-capitalize">
-                                                        {{ translate('file_or_image') }}</h6>
+                                                    <h6 class="fs-12 text-capitalize">{{ translate('file_or_image') }}</h6>
                                                 </div>
                                             </div>
                                         </div>
@@ -191,11 +203,12 @@
                 url: route,
                 dataType: 'json',
                 data: {},
-                beforeSend: function() {},
-                success: function(response) {
+                beforeSend: function () {
+                },
+                success: function (response) {
                     $('#model-selector').html(response.template);
                 },
-                complete: function() {
+                complete: function () {
 
                 },
             });
@@ -204,19 +217,19 @@
         $('#brand_id').select2({
             ajax: {
                 url: '{{ route('admin.vehicle.attribute-setup.brand.all-brands', parameters: ['status' => 'active']) }}',
-                data: function(params) {
+                data: function (params) {
                     return {
                         q: params.term, // search term
                         page: params.page,
                     };
                 },
-                processResults: function(data) {
+                processResults: function (data) {
                     //
                     return {
                         results: data
                     };
                 },
-                __port: function(params, success, failure) {
+                __port: function (params, success, failure) {
                     var $request = $.ajax(params);
                     $request.then(success);
                     $request.fail(failure);
@@ -228,18 +241,18 @@
         $('#vehicle_category').select2({
             ajax: {
                 url: '{{ route('admin.vehicle.attribute-setup.category.all-categories', parameters: ['status' => 'active']) }}',
-                data: function(params) {
+                data: function (params) {
                     return {
                         q: params.term, // search term
                         page: params.page
                     };
                 },
-                processResults: function(data) {
+                processResults: function (data) {
                     return {
                         results: data
                     };
                 },
-                __port: function(params, success, failure) {
+                __port: function (params, success, failure) {
                     let $request = $.ajax(params);
                     $request.then(success);
                     $request.fail(failure);
@@ -253,20 +266,20 @@
         $('.js-select-driver').select2({
             ajax: {
                 url: '{{ route('admin.driver.get-all-ajax-vehicle') }}',
-                data: function(params) {
+                data: function (params) {
                     return {
                         search: params.term, // search term
                         all_driver: all_driver,
                         page: params.page
                     };
                 },
-                processResults: function(data) {
+                processResults: function (data) {
 
                     return {
                         results: data
                     };
                 },
-                __port: function(params, success, failure) {
+                __port: function (params, success, failure) {
                     var $request = $.ajax(params);
                     $request.then(success);
                     $request.fail(failure);
@@ -275,7 +288,7 @@
             }
         });
 
-        $('#vehicle_form').on('submit', function(event) {
+        $('#vehicle_form').on('submit', function (event) {
             if ($('#model_id').val() === null) {
                 toastr.error('{{ translate('fill_up_vehicle_model') }}')
                 event.preventDefault()

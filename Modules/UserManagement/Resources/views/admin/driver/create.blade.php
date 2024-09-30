@@ -78,10 +78,10 @@
                                     <div class="col-12">
                                         <div class="d-flex flex-column justify-content-around gap-3">
                                             <h5 class="">{{translate('identity_card_image')}}</h5>
-                                            
+
                                                 <div class="upload-file image-contain d-flex" id="multi_image_picker">
                                                 </div>
-                                            
+
                                         </div>
                                     </div>
                                 </div>
@@ -155,15 +155,18 @@
                     <div class="card-body">
                         <h5 class="text-primary text-uppercase mb-4">{{translate('upload_Other_Documents')}}</h5>
                         <div class="d-flex flex-wrap gap-3">
+                            <div class="d-flex flex-wrap gap-3" id="selected-files-container"></div>
+                            <div id="input-data"></div>
+                            <!-- Upload New Documents -->
                             <div class="upload-file file__input" id="file__input">
                                 <input type="file" class="upload-file__input2" multiple="multiple"
-                                       name="other_documents[]">
-                                <div class="">
+                                >
+                                <div class="upload-file__img2">
                                     <div class="upload-box rounded media gap-4 align-items-center p-4 px-lg-5">
                                         <i class="bi bi-cloud-arrow-up-fill fs-20"></i>
                                         <div class="media-body">
-                                            <p class="text-muted mb-2 fs-12">{{translate('upload')}}</p>
-                                            <h6 class="fs-12">{{translate('file_or_image')}}</h6>
+                                            <p class="text-muted mb-2 fs-12">{{ translate('upload') }}</p>
+                                            <h6 class="fs-12 text-capitalize">{{ translate('file_or_image') }}</h6>
                                         </div>
                                     </div>
                                 </div>

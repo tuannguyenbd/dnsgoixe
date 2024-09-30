@@ -10,41 +10,30 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
 use Modules\BusinessManagement\Http\Requests\BusinessInfoStoreOrUpdateRequest;
 use Modules\BusinessManagement\Http\Requests\BusinessSettingStoreOrUpdateRequest;
+use Modules\BusinessManagement\Service\ExternalConfigurationService;
 use Modules\BusinessManagement\Service\Interface\BusinessSettingServiceInterface;
+use Modules\BusinessManagement\Service\Interface\ExternalConfigurationServiceInterface;
 
 class BusinessInfoController extends BaseController
 {
     use AuthorizesRequests;
 
     protected $businessSettingService;
+    protected $externalConfigurationService;
 
-    public function __construct(BusinessSettingServiceInterface $businessSettingService)
+    public function __construct(BusinessSettingServiceInterface $businessSettingService,ExternalConfigurationServiceInterface $externalConfigurationService)
     {
         parent::__construct($businessSettingService);
         $this->businessSettingService = $businessSettingService;
+        $this->externalConfigurationService = $externalConfigurationService;
     }
 
     public function index(?Request $request, string $type = null): View|Collection|LengthAwarePaginator|null|callable|RedirectResponse
     {
-//        $data = checkMaintenanceMode();
-//        if ($data['maintenance_status'] == 0) {
-//            $maintenanceMode = $this->businessSettingService
-//                ->findOneBy(criteria: ['key_name' => 'maintenance_mode', 'settings_type' => BUSINESS_INFORMATION]);
-//            $maintenanceModeData = [
-//                'key_name' => 'maintenance_mode',
-//                'value' => 0,
-//                'settings_type' => BUSINESS_INFORMATION
-//            ];
-//            if ($maintenanceMode) {
-//                $this->businessSettingService->update(id: $maintenanceMode->id, data: $maintenanceModeData);
-//            } else {
-//                $this->businessSettingService->create(data: $maintenanceModeData);
-//            }
-//
-//        }
         $this->authorize('business_view');
         $settings = $this->businessSettingService
             ->getBy(criteria: ['settings_type' => BUSINESS_INFORMATION]);
@@ -56,6 +45,24 @@ class BusinessInfoController extends BaseController
     {
         $this->authorize('business_edit');
         $this->businessSettingService->storeBusinessInfo($request->validated());
+        $activationMode = externalConfig('activation_mode');
+        $martBaseUrl = externalConfig('mart_base_url');
+        if ($activationMode && $activationMode->value == 1 && $martBaseUrl && $martBaseUrl->value != null) {
+            $name = businessConfig('business_name', BUSINESS_INFORMATION)?->value ?? "DriveMond";
+            $logo = businessConfig('header_logo', BUSINESS_INFORMATION)?->value ? asset(businessConfig('header_logo', BUSINESS_INFORMATION)?->value) : asset('public/assets/admin-module/img/logo.png');
+            $cta = $this->businessSettingService->findOneBy(criteria: ['key_name' => CTA, 'settings_type' => LANDING_PAGES_SETTINGS]);
+
+            try {
+                $response = Http::post($martBaseUrl->value . '/api/v1/configurations/store', [
+                    'drivemond_business_name' => $name,
+                    'drivemond_business_logo' => $logo,
+                    'drivemond_app_url_android' => $cta?->value && $cta?->value['play_store']['user_download_link'] ? $cta?->value['play_store']['user_download_link'] : "",
+                    'drivemond_app_url_ios' => $cta?->value && $cta?->value['app_store']['user_download_link'] ? $cta?->value['app_store']['user_download_link'] : "",
+                ]);
+            }catch (\Exception $exception){
+
+            }
+        }
         Toastr::success(BUSINESS_SETTING_UPDATE_200['message']);
         return back();
     }

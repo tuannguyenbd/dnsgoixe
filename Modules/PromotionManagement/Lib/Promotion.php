@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Http;
 use Modules\UserManagement\Entities\AppNotification;
 
 if (!function_exists('sendDeviceNotification')) {
-    function sendDeviceNotification($fcm_token, $title, $description, $image = null, $ride_request_id = null, $type = null, $action = null, $user_id = null, $user_name = null ,array $notificationData = []): bool|string
+    function sendDeviceNotification($fcm_token, $title, $description, $image = null, $ride_request_id = null, $type = null, $action = null, $user_id = null, $user_name = null, array $notificationData = []): bool|string
     {
         if ($user_id) {
             $notification = new AppNotification();
@@ -18,9 +18,9 @@ if (!function_exists('sendDeviceNotification')) {
             $notification->save();
         }
         $image = asset('storage/app/public/push-notification') . '/' . $image;
-            $rewardType = $notification && array_key_exists('reward_type',$notificationData) ? $notificationData['reward_type'] : null;
-            $rewardAmount = $notification && array_key_exists('reward_amount',$notificationData) ? $notificationData['reward_amount'] : 0;
-            $nextLevel = $notification && array_key_exists('next_level',$notificationData) ? $notificationData['next_level'] : null;
+        $rewardType = $notification && array_key_exists('reward_type', $notificationData) ? $notificationData['reward_type'] : null;
+        $rewardAmount = $notification && array_key_exists('reward_amount', $notificationData) ? $notificationData['reward_amount'] : 0;
+        $nextLevel = $notification && array_key_exists('next_level', $notificationData) ? $notificationData['next_level'] : null;
 
         $postData = [
             'message' => [
@@ -34,22 +34,37 @@ if (!function_exists('sendDeviceNotification')) {
                     "title_loc_key" => (string)$ride_request_id,
                     "body_loc_key" => (string)$type,
                     "image" => (string)$image,
-                    "action"=>(string)$action ,
-                    "reward_type"=>(string)$rewardType ,
-                    "reward_amount"=>(string)$rewardAmount ,
-                    "next_level"=>(string)$nextLevel ,
+                    "action" => (string)$action,
+                    "reward_type" => (string)$rewardType,
+                    "reward_amount" => (string)$rewardAmount,
+                    "next_level" => (string)$nextLevel,
                     "sound" => "notification.wav",
-                    "android_channel_id" => "hexa-ride"
+                    "android_channel_id" => "hexaride"
                 ],
                 'notification' => [
                     'title' => (string)$title,
                     'body' => (string)$description,
-                ]
+                    "image" => (string)$image,
+                ],
+                "android" => [
+                    'priority' => 'high',
+                    "notification" => [
+                        "channelId" => "hexaride"
+                    ]
+                ],
+                "apns" => [
+                    "payload" => [
+                        "aps" => [
+                            "sound" => "notification.wav"
+                        ]
+                    ],
+                    'headers' => [
+                        'apns-priority' => '10',
+                    ],
+                ],
             ]
         ];
         return sendNotificationToHttp($postData);
-
-//        return sendNotificationToHttp($url, $postdata, $header);
     }
 }
 
@@ -70,12 +85,29 @@ if (!function_exists('sendTopicNotification')) {
                     "body_loc_key" => (string)$type,
                     "image" => (string)$image,
                     "sound" => "notification.wav",
-                    "android_channel_id" => "hexa-ride"
+                    "android_channel_id" => "hexaride"
                 ],
                 'notification' => [
                     'title' => (string)$title,
                     'body' => (string)$description,
-                ]
+                    "image" => (string)$image,
+                ],
+                "android" => [
+                    'priority' => 'high',
+                    "notification" => [
+                        "channelId" => "hexaride"
+                    ]
+                ],
+                "apns" => [
+                    "payload" => [
+                        "aps" => [
+                            "sound" => "notification.wav"
+                        ]
+                    ],
+                    'headers' => [
+                        'apns-priority' => '10',
+                    ],
+                ],
             ]
         ];
         return sendNotificationToHttp($postData);

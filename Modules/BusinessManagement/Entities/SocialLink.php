@@ -5,7 +5,6 @@ namespace Modules\BusinessManagement\Entities;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\AdminModule\Entities\ActivityLog;
 
 class SocialLink extends Model

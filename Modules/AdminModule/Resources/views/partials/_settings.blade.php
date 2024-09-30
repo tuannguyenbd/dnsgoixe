@@ -3,7 +3,7 @@
         <i class="bi bi-gear-fill"></i>
     </div>
     <div class="settings-content">
-        <h4>Settings</h4>
+        <h4>{{ translate('Settings') }}</h4>
         <div class="switchers-wrap">
             <div class="switch-items">
                 <div class="setting-box-wrap">

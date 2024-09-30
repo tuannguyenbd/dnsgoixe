@@ -18,6 +18,7 @@ class UserAccount extends Model
         'pending_balance',
         'wallet_balance',
         'total_withdrawn',
+        'referral_earn',
         'created_at',
         'updated_at',
     ];
@@ -29,6 +30,7 @@ class UserAccount extends Model
         'pending_balance' => 'float',
         'wallet_balance' => 'float',
         'total_withdrawn' => 'float',
+        'referral_earn' => 'float',
     ];
 
     protected static function newFactory()
